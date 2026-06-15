@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Pencil, Trash2, Plus } from 'lucide-react'
 import Page from '../components/Page'
 import { Button, TextInput, Field, Modal, Badge } from '../components/ui'
 import { money } from '../lib/format'
@@ -82,28 +83,33 @@ export default function Articulos(): JSX.Element {
 
   return (
     <Page
-      titulo="Articulos y precios"
-      acciones={<Button onClick={abrirNuevo}>+ Nuevo articulo</Button>}
+      titulo="Artículos y precios"
+      acciones={
+        <Button onClick={abrirNuevo}>
+          <Plus size={14} />
+          Nuevo artículo
+        </Button>
+      }
     >
-      <div className="mb-3 max-w-sm">
+      <div className="mb-4 max-w-sm">
         <TextInput
-          placeholder="Buscar por nombre, codigo o rubro..."
+          placeholder="Buscar por nombre, código o rubro..."
           value={filtro}
           onChange={(e) => setFiltro(e.target.value)}
         />
       </div>
 
-      <div className="overflow-hidden rounded-md border border-line bg-panel">
-        <table className="w-full text-sm">
+      <div className="overflow-hidden rounded border border-line bg-panel">
+        <table className="w-full text-[13px]">
           <thead>
-            <tr className="border-b border-line bg-app text-left text-xs uppercase tracking-wide text-muted">
-              <th className="px-4 py-2 font-medium">Codigo</th>
-              <th className="px-4 py-2 font-medium">Articulo</th>
-              <th className="px-4 py-2 text-right font-medium">Disponible</th>
-              <th className="px-4 py-2 text-right font-medium">Mayorista</th>
-              <th className="px-4 py-2 text-right font-medium">Consumidor</th>
-              <th className="px-4 py-2 font-medium">Estado</th>
-              <th className="px-4 py-2"></th>
+            <tr className="border-b border-line bg-app text-left">
+              <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Código</th>
+              <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Artículo</th>
+              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted">Disponible</th>
+              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted">Mayorista</th>
+              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted">Consumidor</th>
+              <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Estado</th>
+              <th className="px-4 py-2.5" />
             </tr>
           </thead>
           <tbody>
@@ -111,42 +117,54 @@ export default function Articulos(): JSX.Element {
               const stockBajo = a.stock_disponible < a.stock_minimo
               return (
                 <tr key={a.id} className="border-b border-line last:border-0 hover:bg-app">
-                  <td className="num px-4 py-2 text-xs text-muted">{a.codigo_barras}</td>
-                  <td className="px-4 py-2 text-ink">
-                    {a.nombre}
-                    <span className="block text-xs text-muted">{a.rubro}</span>
+                  <td className="px-4 py-2.5 font-mono text-[12px] text-muted">{a.codigo_barras}</td>
+                  <td className="px-4 py-2.5">
+                    <div className="font-medium text-ink">{a.nombre}</div>
+                    {a.rubro && <div className="text-[11px] text-muted">{a.rubro}</div>}
                   </td>
-                  <td className="num px-4 py-2 text-right">
+                  <td className="px-4 py-2.5 text-right font-mono font-medium">
                     {a.stock_disponible}
-                    {a.stock_reservado > 0 && <span className="text-muted"> ({a.stock_reservado} res.)</span>}
+                    {a.stock_reservado > 0 && (
+                      <span className="ml-1 text-[11px] text-muted">({a.stock_reservado} res.)</span>
+                    )}
                   </td>
-                  <td className="num px-4 py-2 text-right">
+                  <td className="px-4 py-2.5 text-right font-mono text-[13px]">
                     {a.en_oferta && a.precio_oferta != null ? money(a.precio_oferta) : money(a.precios.mayorista)}
                   </td>
-                  <td className="num px-4 py-2 text-right">
+                  <td className="px-4 py-2.5 text-right font-mono text-[13px]">
                     {a.en_oferta && a.precio_oferta != null ? money(a.precio_oferta) : money(a.precios.consumidor)}
                   </td>
-                  <td className="px-4 py-2">
+                  <td className="px-4 py-2.5">
                     <div className="flex gap-1">
                       {a.en_oferta === 1 && <Badge tone="ok">Oferta</Badge>}
                       {stockBajo && <Badge tone="danger">Stock bajo</Badge>}
                     </div>
                   </td>
-                  <td className="px-4 py-2 text-right">
-                    <button onClick={() => abrirEditar(a)} className="mr-2 text-primary hover:underline">
-                      Editar
-                    </button>
-                    <button onClick={() => eliminar(a)} className="text-danger hover:underline">
-                      Eliminar
-                    </button>
+                  <td className="px-4 py-2.5">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => abrirEditar(a)}
+                        className="flex h-7 w-7 items-center justify-center rounded border border-transparent text-muted transition-colors hover:border-line hover:text-ink"
+                        title="Editar"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <button
+                        onClick={() => eliminar(a)}
+                        className="flex h-7 w-7 items-center justify-center rounded border border-transparent text-muted transition-colors hover:border-danger/30 hover:text-danger"
+                        title="Eliminar"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               )
             })}
             {articulos.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-muted">
-                  Sin articulos.
+                <td colSpan={7} className="px-4 py-10 text-center text-muted">
+                  Sin artículos.
                 </td>
               </tr>
             )}
@@ -156,13 +174,11 @@ export default function Articulos(): JSX.Element {
 
       <Modal
         open={!!form}
-        title={form?.id ? 'Editar articulo' : 'Nuevo articulo'}
+        title={form?.id ? 'Editar artículo' : 'Nuevo artículo'}
         onClose={() => setForm(null)}
         footer={
           <>
-            <Button variant="secondary" onClick={() => setForm(null)}>
-              Cancelar
-            </Button>
+            <Button variant="secondary" onClick={() => setForm(null)}>Cancelar</Button>
             <Button onClick={guardar}>Guardar</Button>
           </>
         }
@@ -172,7 +188,7 @@ export default function Articulos(): JSX.Element {
             <Field label="Nombre">
               <TextInput value={form.nombre} onChange={(e) => set('nombre', e.target.value)} />
             </Field>
-            <Field label="Codigo de barras">
+            <Field label="Código de barras">
               <TextInput value={form.codigo_barras} onChange={(e) => set('codigo_barras', e.target.value)} />
             </Field>
             <Field label="Rubro">
@@ -184,7 +200,7 @@ export default function Articulos(): JSX.Element {
             <Field label="Descuento (%)">
               <TextInput type="number" value={form.descuento_pct} onChange={(e) => set('descuento_pct', Number(e.target.value))} />
             </Field>
-            <Field label="Stock minimo">
+            <Field label="Stock mínimo">
               <TextInput type="number" value={form.stock_minimo} onChange={(e) => set('stock_minimo', Number(e.target.value))} />
             </Field>
             <Field label="Markup mayorista (%)">
@@ -199,9 +215,9 @@ export default function Articulos(): JSX.Element {
               </Field>
             )}
             <div className="col-span-2 flex items-center gap-3 rounded border border-line bg-app p-3">
-              <label className="flex items-center gap-2 text-sm">
+              <label className="flex cursor-pointer items-center gap-2 text-[13px]">
                 <input type="checkbox" checked={form.en_oferta} onChange={(e) => set('en_oferta', e.target.checked)} />
-                En oferta
+                <span className="font-medium text-ink">En oferta</span>
               </label>
               {form.en_oferta && (
                 <div className="flex-1">

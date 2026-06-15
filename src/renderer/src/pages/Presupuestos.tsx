@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Plus, FileText, Printer, CheckCheck, Ban } from 'lucide-react'
 import Page from '../components/Page'
 import { Button, TextInput, Field, Modal, Badge } from '../components/ui'
 import { money, fmtFecha } from '../lib/format'
@@ -28,7 +29,6 @@ export default function Presupuestos(): JSX.Element {
   const [modal, setModal] = useState(false)
   const [error, setError] = useState('')
 
-  // estado del formulario
   const [clienteId, setClienteId] = useState<number | null>(null)
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [listaPrecio, setListaPrecio] = useState<Lista>('consumidor')
@@ -114,58 +114,85 @@ export default function Presupuestos(): JSX.Element {
   }
 
   return (
-    <Page titulo="Presupuestos" acciones={<Button onClick={abrir}>+ Nuevo presupuesto</Button>}>
+    <Page
+      titulo="Presupuestos"
+      acciones={
+        <Button onClick={abrir}>
+          <Plus size={14} />
+          Nuevo presupuesto
+        </Button>
+      }
+    >
       {error && (
-        <div className="mb-3 flex items-center justify-between rounded border border-danger/30 bg-danger/10 px-4 py-2 text-sm text-danger">
+        <div className="mb-3 flex items-center justify-between rounded border border-danger/30 bg-danger/8 px-4 py-2.5 text-[13px] text-danger">
           <span>{error}</span>
-          <button onClick={() => setError('')} className="ml-3 font-bold">✕</button>
+          <button onClick={() => setError('')} className="ml-3 text-danger/60 hover:text-danger">✕</button>
         </div>
       )}
-      <div className="overflow-hidden rounded-md border border-line bg-panel">
-        <table className="w-full text-sm">
+
+      <div className="overflow-hidden rounded border border-line bg-panel">
+        <table className="w-full text-[13px]">
           <thead>
-            <tr className="border-b border-line bg-app text-left text-xs uppercase tracking-wide text-muted">
-              <th className="px-4 py-2 font-medium">#</th>
-              <th className="px-4 py-2 font-medium">Fecha</th>
-              <th className="px-4 py-2 font-medium">Cliente</th>
-              <th className="px-4 py-2 text-right font-medium">Total</th>
-              <th className="px-4 py-2 font-medium">Estado</th>
-              <th className="px-4 py-2"></th>
+            <tr className="border-b border-line bg-app text-left">
+              <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted">#</th>
+              <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Fecha</th>
+              <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Cliente</th>
+              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted">Total</th>
+              <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Estado</th>
+              <th className="px-4 py-2.5" />
             </tr>
           </thead>
           <tbody>
             {lista.map((p) => (
               <tr key={p.id} className="border-b border-line last:border-0 hover:bg-app">
-                <td className="num px-4 py-2 text-muted">{p.id}</td>
-                <td className="num px-4 py-2 text-xs text-muted">{fmtFecha(p.fecha)}</td>
-                <td className="px-4 py-2 text-ink">{p.cliente_nombre ?? 'Mostrador'}</td>
-                <td className="num px-4 py-2 text-right">{money(p.total)}</td>
-                <td className="px-4 py-2">
+                <td className="px-4 py-2.5 font-mono text-[12px] text-muted">{p.id}</td>
+                <td className="px-4 py-2.5 font-mono text-[12px] text-muted">{fmtFecha(p.fecha)}</td>
+                <td className="px-4 py-2.5 font-medium text-ink">{p.cliente_nombre ?? 'Mostrador'}</td>
+                <td className="px-4 py-2.5 text-right font-mono font-semibold">{money(p.total)}</td>
+                <td className="px-4 py-2.5">
                   <Badge tone={TONO[p.estado]}>{p.estado}</Badge>
                 </td>
-                <td className="px-4 py-2 text-right">
-                  <button onClick={() => verPdf(p.id)} className="mr-3 text-muted hover:underline">
-                    Ver PDF
-                  </button>
-                  <button onClick={() => imprimir(p.id)} className="mr-3 text-muted hover:underline">
-                    Imprimir
-                  </button>
-                  {p.estado === 'vigente' && (
-                    <>
-                      <button onClick={() => aprobar(p.id)} className="mr-3 text-ok hover:underline">
-                        Aprobar
-                      </button>
-                      <button onClick={() => anular(p.id)} className="text-danger hover:underline">
-                        Anular
-                      </button>
-                    </>
-                  )}
+                <td className="px-4 py-2.5">
+                  <div className="flex items-center justify-end gap-1">
+                    <button
+                      onClick={() => verPdf(p.id)}
+                      className="flex h-7 w-7 items-center justify-center rounded border border-transparent text-muted transition-colors hover:border-line hover:text-ink"
+                      title="Ver PDF"
+                    >
+                      <FileText size={13} />
+                    </button>
+                    <button
+                      onClick={() => imprimir(p.id)}
+                      className="flex h-7 w-7 items-center justify-center rounded border border-transparent text-muted transition-colors hover:border-line hover:text-ink"
+                      title="Imprimir"
+                    >
+                      <Printer size={13} />
+                    </button>
+                    {p.estado === 'vigente' && (
+                      <>
+                        <button
+                          onClick={() => aprobar(p.id)}
+                          className="flex h-7 w-7 items-center justify-center rounded border border-transparent text-muted transition-colors hover:border-ok/40 hover:text-ok"
+                          title="Aprobar"
+                        >
+                          <CheckCheck size={13} />
+                        </button>
+                        <button
+                          onClick={() => anular(p.id)}
+                          className="flex h-7 w-7 items-center justify-center rounded border border-transparent text-muted transition-colors hover:border-danger/30 hover:text-danger"
+                          title="Anular"
+                        >
+                          <Ban size={13} />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
             {lista.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-muted">
+                <td colSpan={6} className="px-4 py-10 text-center text-muted">
                   Sin presupuestos.
                 </td>
               </tr>
@@ -180,13 +207,9 @@ export default function Presupuestos(): JSX.Element {
         onClose={() => setModal(false)}
         footer={
           <>
-            <span className="num mr-auto self-center text-lg font-bold">{money(total)}</span>
-            <Button variant="secondary" onClick={() => setModal(false)}>
-              Cancelar
-            </Button>
-            <Button disabled={carrito.length === 0} onClick={guardar}>
-              Crear (reserva stock)
-            </Button>
+            <span className="mr-auto font-mono text-lg font-bold text-ink">{money(total)}</span>
+            <Button variant="secondary" onClick={() => setModal(false)}>Cancelar</Button>
+            <Button disabled={carrito.length === 0} onClick={guardar}>Crear (reserva stock)</Button>
           </>
         }
       >
@@ -195,13 +218,11 @@ export default function Presupuestos(): JSX.Element {
             <select
               value={clienteId ?? ''}
               onChange={(e) => setClienteId(e.target.value ? Number(e.target.value) : null)}
-              className="w-full rounded border border-line bg-panel px-3 py-2 text-sm"
+              className="w-full rounded border border-line bg-panel px-3 py-[7px] text-[13px] outline-none focus:border-primary"
             >
               <option value="">Mostrador</option>
               {clientes.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nombre}
-                </option>
+                <option key={c.id} value={c.id}>{c.nombre}</option>
               ))}
             </select>
           </Field>
@@ -209,7 +230,7 @@ export default function Presupuestos(): JSX.Element {
             <select
               value={listaPrecio}
               onChange={(e) => setListaPrecio(e.target.value as Lista)}
-              className="w-full rounded border border-line bg-panel px-3 py-2 text-sm"
+              className="w-full rounded border border-line bg-panel px-3 py-[7px] text-[13px] outline-none focus:border-primary"
             >
               <option value="consumidor">Consumidor final</option>
               <option value="mayorista">Mayorista</option>
@@ -217,17 +238,21 @@ export default function Presupuestos(): JSX.Element {
           </Field>
         </div>
 
-        <TextInput placeholder="Buscar articulo..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+        <TextInput
+          placeholder="Buscar artículo..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+        />
         {resultados.length > 0 && (
-          <div className="mt-1 overflow-hidden rounded border border-line">
+          <div className="mt-1.5 overflow-hidden rounded border border-line">
             {resultados.slice(0, 6).map((a) => (
               <button
                 key={a.id}
                 onClick={() => agregar(a)}
-                className="flex w-full justify-between border-b border-line px-3 py-2 text-left text-sm last:border-0 hover:bg-app"
+                className="flex w-full justify-between border-b border-line px-3 py-2 text-left text-[13px] last:border-0 hover:bg-app"
               >
                 <span>{a.nombre}</span>
-                <span className="num">{money(precioDe(a, listaPrecio))}</span>
+                <span className="font-mono">{money(precioDe(a, listaPrecio))}</span>
               </button>
             ))}
           </div>
@@ -235,13 +260,15 @@ export default function Presupuestos(): JSX.Element {
 
         <div className="mt-3">
           {carrito.map((it) => (
-            <div key={it.art.id} className="flex items-center justify-between border-b border-line py-2 text-sm">
-              <span className="flex-1">{it.art.nombre}</span>
-              <span className="num mx-3">x{it.cantidad}</span>
-              <span className="num w-20 text-right">{money(precioDe(it.art, listaPrecio) * it.cantidad)}</span>
+            <div key={it.art.id} className="flex items-center justify-between border-b border-line py-2 text-[13px]">
+              <span className="flex-1 text-ink">{it.art.nombre}</span>
+              <span className="font-mono mx-3 text-muted">×{it.cantidad}</span>
+              <span className="font-mono w-20 text-right font-medium">{money(precioDe(it.art, listaPrecio) * it.cantidad)}</span>
             </div>
           ))}
-          {carrito.length === 0 && <p className="py-3 text-center text-sm text-muted">Agrega articulos.</p>}
+          {carrito.length === 0 && (
+            <p className="py-4 text-center text-[13px] text-muted">Agregá artículos.</p>
+          )}
         </div>
       </Modal>
     </Page>
