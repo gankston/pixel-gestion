@@ -26,6 +26,7 @@ const TONO: Record<string, 'primary' | 'ok' | 'muted' | 'danger'> = {
 export default function Presupuestos(): JSX.Element {
   const [lista, setLista] = useState<Presupuesto[]>([])
   const [modal, setModal] = useState(false)
+  const [error, setError] = useState('')
 
   // estado del formulario
   const [clienteId, setClienteId] = useState<number | null>(null)
@@ -87,13 +88,21 @@ export default function Presupuestos(): JSX.Element {
 
   async function aprobar(id: number): Promise<void> {
     if (!confirm('Aprobar el presupuesto? Se descuenta el stock y se genera la venta.')) return
-    await window.api.aprobarPresupuesto(id)
-    recargar()
+    try {
+      await window.api.aprobarPresupuesto(id)
+      recargar()
+    } catch (e) {
+      setError(`No se pudo aprobar: ${e instanceof Error ? e.message : String(e)}`)
+    }
   }
   async function anular(id: number): Promise<void> {
     if (!confirm('Anular el presupuesto? Se libera el stock reservado.')) return
-    await window.api.anularPresupuesto(id)
-    recargar()
+    try {
+      await window.api.anularPresupuesto(id)
+      recargar()
+    } catch (e) {
+      setError(`No se pudo anular: ${e instanceof Error ? e.message : String(e)}`)
+    }
   }
   async function imprimir(id: number): Promise<void> {
     const det = await window.api.detallePresupuesto(id)
@@ -102,6 +111,12 @@ export default function Presupuestos(): JSX.Element {
 
   return (
     <Page titulo="Presupuestos" acciones={<Button onClick={abrir}>+ Nuevo presupuesto</Button>}>
+      {error && (
+        <div className="mb-3 flex items-center justify-between rounded border border-danger/30 bg-danger/10 px-4 py-2 text-sm text-danger">
+          <span>{error}</span>
+          <button onClick={() => setError('')} className="ml-3 font-bold">✕</button>
+        </div>
+      )}
       <div className="overflow-hidden rounded-md border border-line bg-panel">
         <table className="w-full text-sm">
           <thead>

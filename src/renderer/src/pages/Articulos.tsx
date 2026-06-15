@@ -120,7 +120,9 @@ export default function Articulos(): JSX.Element {
                     {a.stock_disponible}
                     {a.stock_reservado > 0 && <span className="text-muted"> ({a.stock_reservado} res.)</span>}
                   </td>
-                  <td className="num px-4 py-2 text-right">{money(a.precios.mayorista)}</td>
+                  <td className="num px-4 py-2 text-right">
+                    {a.en_oferta && a.precio_oferta != null ? money(a.precio_oferta) : money(a.precios.mayorista)}
+                  </td>
                   <td className="num px-4 py-2 text-right">
                     {a.en_oferta && a.precio_oferta != null ? money(a.precio_oferta) : money(a.precios.consumidor)}
                   </td>

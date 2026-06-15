@@ -63,6 +63,8 @@ export default function Ventas(): JSX.Element {
     })
     setBusqueda('')
     setResultados([])
+    setMensaje('')
+    setUltimaVentaId(null)
     scanRef.current?.focus()
   }
 

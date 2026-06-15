@@ -1,4 +1,4 @@
-import { run, lastId, tx, all } from '../db'
+import { run, lastId, tx, all, get } from '../db'
 import { registrarMovimiento } from './stock'
 import { asegurarCajaAbierta, registrarMovimientoCaja, type MedioPago } from './caja'
 

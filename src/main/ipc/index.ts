@@ -74,15 +74,27 @@ export function registerIpc(): void {
 
   // Impresion A4
   ipcMain.handle('print:html', (_e, html: string) => {
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
       const win = new BrowserWindow({ show: false, webPreferences: { javascript: false } })
-      win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
+
+      const timeout = setTimeout(() => {
+        if (!win.isDestroyed()) win.destroy()
+        reject(new Error('Timeout al preparar la impresion'))
+      }, 15000)
+
       win.webContents.once('did-finish-load', () => {
+        clearTimeout(timeout)
         win.webContents.print(
           { silent: false, printBackground: true, pageSize: 'A4' },
-          () => { win.destroy(); resolve() }
+          (success, errorType) => {
+            if (!win.isDestroyed()) win.destroy()
+            if (success || errorType === 'cancelled') resolve()
+            else reject(new Error(`Error de impresion: ${errorType}`))
+          }
         )
       })
+
+      win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
     })
   })
 }

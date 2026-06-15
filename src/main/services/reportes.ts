@@ -45,8 +45,8 @@ export function stockBajoMinimo() {
 
 export function resumenMes() {
   const ahora = new Date()
-  const inicioMes = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-01`
-  const hoyStr = ahora.toISOString().substring(0, 10)
+  const inicioMes = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-01 00:00:00`
+  const hoyStr = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}`
 
   const mes = get<{ cantidad: number; monto: number }>(`
     SELECT COUNT(*) AS cantidad, COALESCE(CAST(SUM(total) AS INTEGER), 0) AS monto

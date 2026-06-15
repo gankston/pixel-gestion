@@ -13,10 +13,10 @@ export default function Stock(): JSX.Element {
   useEffect(recargar, [filtro])
 
   async function ingreso(a: ArticuloConPrecios): Promise<void> {
-    const txt = prompt(`Ingreso de mercaderia para "${a.nombre}". Cantidad a sumar:`, '1')
+    const txt = prompt(`Ingreso de mercaderia para "${a.nombre}". Cantidad a sumar (debe ser positivo):`, '1')
     if (txt == null) return
     const cant = Number(txt)
-    if (!cant) return
+    if (!cant || cant <= 0) { alert('La cantidad debe ser mayor a cero.'); return }
     await window.api.ingresoStock(a.id, cant)
     recargar()
   }

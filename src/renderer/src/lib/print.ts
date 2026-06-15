@@ -42,7 +42,7 @@ const ESTILOS = `
   .nota { margin-bottom: 6px; font-size: 8.5pt; color: #5B6878; }
 `
 
-function buildHtml(titulo: string, nro: string, fecha: string, cliente: string | null, lista: string, items: Array<{ nombre: string; cantidad: number; precio_unit: number }>, total: number, extraBadge?: string): string {
+function buildHtml(titulo: string, nro: string, fecha: string, cliente: string | null, lista: string, items: Array<{ nombre: string; cantidad: number; precio_unit: number }>, total: number, extraBadge?: string, extraBody = ''): string {
   const filas = items
     .map(
       (it) =>
@@ -92,6 +92,7 @@ function buildHtml(titulo: string, nro: string, fecha: string, cliente: string |
     <div>PIXEL GESTION — Sistema de gestion comercial</div>
     <div>Impreso: ${new Date().toLocaleDateString('es-AR')}</div>
   </div>
+  ${extraBody}
 </body></html>`
 }
 
@@ -112,8 +113,9 @@ export function imprimirVenta(det: DetalleVenta): Promise<void> {
 export function imprimirPresupuesto(det: DetallePresupuesto): Promise<void> {
   const nro = String(det.id).padStart(6, '0')
   const estadoBadge = `<span class="badge badge-${det.estado}">${det.estado}</span>`
-  let nota = ''
-  if (det.vencimiento) nota = `<p class="nota">Valido hasta: ${fmtFechaCorta(det.vencimiento)}</p>`
+  const nota = det.vencimiento
+    ? `<p class="nota" style="margin-top:10px">Valido hasta: ${fmtFechaCorta(det.vencimiento)}</p>`
+    : ''
   const html = buildHtml(
     'PRESUPUESTO',
     nro,
@@ -122,7 +124,8 @@ export function imprimirPresupuesto(det: DetallePresupuesto): Promise<void> {
     det.lista,
     det.items,
     det.total,
-    estadoBadge
-  ) + nota
+    estadoBadge,
+    nota
+  )
   return window.api.imprimirHtml(html)
 }

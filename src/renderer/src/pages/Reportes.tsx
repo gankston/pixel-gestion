@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react'
 import Page from '../components/Page'
 import { Button, Badge } from '../components/ui'
-import { money, fmtFecha } from '../lib/format'
+import { money } from '../lib/format'
+
+function fmtDia(yyyymmdd: string): string {
+  const [y, m, d] = yyyymmdd.split('-')
+  return `${d}/${m}/${y.slice(2)}`
+}
 import type { VentaDia, ProductoTop, StockBajo, ResumenMes, BackupInfo } from '../../../preload'
 
 function KpiCard({ titulo, valor, sub }: { titulo: string; valor: string; sub?: string }): JSX.Element {
@@ -87,7 +92,7 @@ export default function Reportes(): JSX.Element {
               <tbody>
                 {ventasDia.map((v) => (
                   <tr key={v.dia} className="border-b border-line last:border-0 hover:bg-app">
-                    <td className="num px-4 py-2 text-xs">{fmtFecha(v.dia)}</td>
+                    <td className="num px-4 py-2 text-xs">{fmtDia(v.dia)}</td>
                     <td className="num px-4 py-2 text-right">{v.cantidad}</td>
                     <td className="num px-4 py-2 text-right font-medium">{money(v.monto)}</td>
                   </tr>
