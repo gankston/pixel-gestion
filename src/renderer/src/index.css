@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-app text-ink font-sans antialiased;
+    margin: 0;
+    /* Cifras tabulares: montos y stock alineados en columnas (DESIGN.md). */
+    font-feature-settings: 'tnum' 1;
+  }
+}
+
+@layer components {
+  /* Numeros, precios y codigos: monoespaciado con cifras tabulares. */
+  .num {
+    @apply font-mono;
+    font-variant-numeric: tabular-nums;
+  }
+}

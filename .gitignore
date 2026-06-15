@@ -1,0 +1,15 @@
+node_modules/
+out/
+dist/
+*.log
+.DS_Store
+
+# Base de datos local (no versionar datos del cliente)
+*.db
+*.db-shm
+*.db-wal
+/data/
+
+# Variables de entorno
+.env
+.env.local
