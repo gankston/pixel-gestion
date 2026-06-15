@@ -180,8 +180,12 @@ export default function Ventas(): JSX.Element {
                 <button
                   className="shrink-0 rounded border border-ok/40 px-3 py-1 text-xs font-medium hover:bg-ok/10"
                   onClick={async () => {
-                    const det = await window.api.detalleVenta(ultimaVentaId)
-                    if (det) imprimirVenta(det)
+                    try {
+                      const det = await window.api.detalleVenta(ultimaVentaId)
+                      if (det) await imprimirVenta(det)
+                    } catch (e) {
+                      setMensaje(`Error al imprimir: ${e instanceof Error ? e.message : String(e)}`)
+                    }
                   }}
                 >
                   Imprimir

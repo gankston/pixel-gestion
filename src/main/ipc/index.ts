@@ -1,4 +1,7 @@
 import { ipcMain, BrowserWindow } from 'electron'
+import { writeFileSync, unlinkSync } from 'fs'
+import { join } from 'path'
+import { tmpdir } from 'os'
 import * as articulos from '../services/articulos'
 import * as ventas from '../services/ventas'
 import * as presupuestos from '../services/presupuestos'
@@ -72,13 +75,27 @@ export function registerIpc(): void {
   ipcMain.handle('backup:hacer', () => backup.hacerBackup())
   ipcMain.handle('backup:listar', () => backup.listarBackups())
 
-  // Impresion A4
+  // Impresion A4: escribe HTML a archivo temporal y lo carga con loadFile()
+  // (data: URLs estan bloqueadas por CSP en Electron 20+)
   ipcMain.handle('print:html', (_e, html: string) => {
     return new Promise<void>((resolve, reject) => {
-      const win = new BrowserWindow({ show: false, webPreferences: { javascript: false } })
+      const tmpFile = join(tmpdir(), `pixel-print-${Date.now()}.html`)
+      try {
+        writeFileSync(tmpFile, html, 'utf-8')
+      } catch (e) {
+        return reject(new Error(`No se pudo crear el archivo temporal: ${e}`))
+      }
+
+      const cleanup = (): void => { try { unlinkSync(tmpFile) } catch { /* ya borrado */ } }
+
+      const win = new BrowserWindow({
+        show: false,
+        webPreferences: { javascript: false, sandbox: true }
+      })
 
       const timeout = setTimeout(() => {
         if (!win.isDestroyed()) win.destroy()
+        cleanup()
         reject(new Error('Timeout al preparar la impresion'))
       }, 15000)
 
@@ -88,13 +105,14 @@ export function registerIpc(): void {
           { silent: false, printBackground: true, pageSize: 'A4' },
           (success, errorType) => {
             if (!win.isDestroyed()) win.destroy()
+            cleanup()
             if (success || errorType === 'cancelled') resolve()
             else reject(new Error(`Error de impresion: ${errorType}`))
           }
         )
       })
 
-      win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
+      win.loadFile(tmpFile)
     })
   })
 }
