@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Page from '../components/Page'
 import { Button, TextInput, Field, Modal, Badge } from '../components/ui'
 import { money, fmtFecha } from '../lib/format'
-import { imprimirPresupuesto } from '../lib/print'
+import { imprimirPresupuesto, verPdfPresupuesto } from '../lib/print'
 import type { ArticuloConPrecios, Cliente, Presupuesto } from '../../../preload'
 
 type Lista = 'mayorista' | 'consumidor'
@@ -106,7 +106,11 @@ export default function Presupuestos(): JSX.Element {
   }
   async function imprimir(id: number): Promise<void> {
     const det = await window.api.detallePresupuesto(id)
-    if (det) imprimirPresupuesto(det)
+    if (det) await imprimirPresupuesto(det)
+  }
+  async function verPdf(id: number): Promise<void> {
+    const det = await window.api.detallePresupuesto(id)
+    if (det) await verPdfPresupuesto(det)
   }
 
   return (
@@ -140,6 +144,9 @@ export default function Presupuestos(): JSX.Element {
                   <Badge tone={TONO[p.estado]}>{p.estado}</Badge>
                 </td>
                 <td className="px-4 py-2 text-right">
+                  <button onClick={() => verPdf(p.id)} className="mr-3 text-muted hover:underline">
+                    Ver PDF
+                  </button>
                   <button onClick={() => imprimir(p.id)} className="mr-3 text-muted hover:underline">
                     Imprimir
                   </button>

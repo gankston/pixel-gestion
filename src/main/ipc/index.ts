@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow } from 'electron'
+import { ipcMain, BrowserWindow, shell } from 'electron'
 import { writeFileSync, unlinkSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
@@ -113,6 +113,56 @@ export function registerIpc(): void {
       })
 
       win.loadFile(tmpFile)
+    })
+  })
+
+  // Vista previa PDF: genera el PDF y lo abre con el visor del sistema
+  ipcMain.handle('print:pdf', (_e, html: string) => {
+    return new Promise<void>((resolve, reject) => {
+      const stamp = Date.now()
+      const tmpHtml = join(tmpdir(), `pixel-pdf-${stamp}.html`)
+      const tmpPdf = join(tmpdir(), `pixel-pdf-${stamp}.pdf`)
+
+      try {
+        writeFileSync(tmpHtml, html, 'utf-8')
+      } catch (e) {
+        return reject(new Error(`No se pudo crear el archivo temporal: ${e}`))
+      }
+
+      const cleanHtml = (): void => { try { unlinkSync(tmpHtml) } catch { /* ya borrado */ } }
+
+      const win = new BrowserWindow({
+        show: false,
+        webPreferences: { javascript: false, sandbox: true }
+      })
+
+      const timeout = setTimeout(() => {
+        if (!win.isDestroyed()) win.destroy()
+        cleanHtml()
+        reject(new Error('Timeout al generar el PDF'))
+      }, 15000)
+
+      win.webContents.once('did-finish-load', async () => {
+        clearTimeout(timeout)
+        try {
+          const pdfBuffer = await win.webContents.printToPDF({
+            pageSize: 'A4',
+            printBackground: true,
+            margins: { marginType: 'default' }
+          })
+          if (!win.isDestroyed()) win.destroy()
+          cleanHtml()
+          writeFileSync(tmpPdf, pdfBuffer)
+          shell.openPath(tmpPdf)
+          resolve()
+        } catch (e) {
+          if (!win.isDestroyed()) win.destroy()
+          cleanHtml()
+          reject(e)
+        }
+      })
+
+      win.loadFile(tmpHtml)
     })
   })
 }

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import Page from '../components/Page'
 import { Button, TextInput, Badge } from '../components/ui'
 import { money } from '../lib/format'
-import { imprimirVenta } from '../lib/print'
+import { imprimirVenta, verPdfVenta } from '../lib/print'
 import type { ArticuloConPrecios, Cliente } from '../../../preload'
 
 type Lista = 'mayorista' | 'consumidor'
@@ -177,19 +177,34 @@ export default function Ventas(): JSX.Element {
             <div className="mt-4 flex items-center gap-3 rounded border border-ok/30 bg-ok/10 px-4 py-2 text-sm text-ok">
               <span className="flex-1">{mensaje}</span>
               {ultimaVentaId && (
-                <button
-                  className="shrink-0 rounded border border-ok/40 px-3 py-1 text-xs font-medium hover:bg-ok/10"
-                  onClick={async () => {
-                    try {
-                      const det = await window.api.detalleVenta(ultimaVentaId)
-                      if (det) await imprimirVenta(det)
-                    } catch (e) {
-                      setMensaje(`Error al imprimir: ${e instanceof Error ? e.message : String(e)}`)
-                    }
-                  }}
-                >
-                  Imprimir
-                </button>
+                <div className="flex shrink-0 gap-1">
+                  <button
+                    className="rounded border border-ok/40 px-3 py-1 text-xs font-medium hover:bg-ok/10"
+                    onClick={async () => {
+                      try {
+                        const det = await window.api.detalleVenta(ultimaVentaId)
+                        if (det) await verPdfVenta(det)
+                      } catch (e) {
+                        setMensaje(`Error: ${e instanceof Error ? e.message : String(e)}`)
+                      }
+                    }}
+                  >
+                    Ver PDF
+                  </button>
+                  <button
+                    className="rounded border border-ok/40 px-3 py-1 text-xs font-medium hover:bg-ok/10"
+                    onClick={async () => {
+                      try {
+                        const det = await window.api.detalleVenta(ultimaVentaId)
+                        if (det) await imprimirVenta(det)
+                      } catch (e) {
+                        setMensaje(`Error: ${e instanceof Error ? e.message : String(e)}`)
+                      }
+                    }}
+                  >
+                    Imprimir
+                  </button>
+                </div>
               )}
             </div>
           )}

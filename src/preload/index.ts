@@ -52,8 +52,9 @@ const api = {
   hacerBackup: () => ipcRenderer.invoke('backup:hacer'),
   listarBackups: () => ipcRenderer.invoke('backup:listar'),
 
-  // Impresion A4
-  imprimirHtml: (html: string) => ipcRenderer.invoke('print:html', html)
+  // Impresion A4 y PDF
+  imprimirHtml: (html: string) => ipcRenderer.invoke('print:html', html),
+  verPdf: (html: string) => ipcRenderer.invoke('print:pdf', html)
 }
 
 if (process.contextIsolated) {

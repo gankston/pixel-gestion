@@ -1,7 +1,7 @@
 import type { DetalleVenta, DetallePresupuesto } from '../../../preload'
 
 function fmt(n: number): string {
-  return '$ ' + Math.round(n).toLocaleString('es-AR')
+  return '$ ' + Math.round(n).toLocaleString('es-AR')
 }
 
 function fmtFechaCorta(iso: string): string {
@@ -42,7 +42,17 @@ const ESTILOS = `
   .nota { margin-bottom: 6px; font-size: 8.5pt; color: #5B6878; }
 `
 
-function buildHtml(titulo: string, nro: string, fecha: string, cliente: string | null, lista: string, items: Array<{ nombre: string; cantidad: number; precio_unit: number }>, total: number, extraBadge?: string, extraBody = ''): string {
+function buildHtml(
+  titulo: string,
+  nro: string,
+  fecha: string,
+  cliente: string | null,
+  lista: string,
+  items: Array<{ nombre: string; cantidad: number; precio_unit: number }>,
+  total: number,
+  extraBadge?: string,
+  extraBody = ''
+): string {
   const filas = items
     .map(
       (it) =>
@@ -90,35 +100,34 @@ function buildHtml(titulo: string, nro: string, fecha: string, cliente: string |
   </table>
   <div class="footer">
     <div>PIXEL GESTION — Sistema de gestion comercial</div>
-    <div>Impreso: ${new Date().toLocaleDateString('es-AR')}</div>
+    <div>Generado: ${new Date().toLocaleDateString('es-AR')}</div>
   </div>
   ${extraBody}
 </body></html>`
 }
 
-export function imprimirVenta(det: DetalleVenta): Promise<void> {
-  const nro = String(det.id).padStart(6, '0')
-  const html = buildHtml(
+// ── Helpers internos para construir el HTML de cada tipo ──
+
+function htmlVenta(det: DetalleVenta): string {
+  return buildHtml(
     'COMPROBANTE DE VENTA',
-    nro,
+    String(det.id).padStart(6, '0'),
     fmtFechaCorta(det.fecha),
     det.cliente_nombre,
     det.lista,
     det.items,
     det.total
   )
-  return window.api.imprimirHtml(html)
 }
 
-export function imprimirPresupuesto(det: DetallePresupuesto): Promise<void> {
-  const nro = String(det.id).padStart(6, '0')
+function htmlPresupuesto(det: DetallePresupuesto): string {
   const estadoBadge = `<span class="badge badge-${det.estado}">${det.estado}</span>`
   const nota = det.vencimiento
     ? `<p class="nota" style="margin-top:10px">Valido hasta: ${fmtFechaCorta(det.vencimiento)}</p>`
     : ''
-  const html = buildHtml(
+  return buildHtml(
     'PRESUPUESTO',
-    nro,
+    String(det.id).padStart(6, '0'),
     fmtFechaCorta(det.fecha),
     det.cliente_nombre,
     det.lista,
@@ -127,5 +136,18 @@ export function imprimirPresupuesto(det: DetallePresupuesto): Promise<void> {
     estadoBadge,
     nota
   )
-  return window.api.imprimirHtml(html)
 }
+
+// ── API pública ──
+
+export const imprimirVenta = (det: DetalleVenta): Promise<void> =>
+  window.api.imprimirHtml(htmlVenta(det))
+
+export const imprimirPresupuesto = (det: DetallePresupuesto): Promise<void> =>
+  window.api.imprimirHtml(htmlPresupuesto(det))
+
+export const verPdfVenta = (det: DetalleVenta): Promise<void> =>
+  window.api.verPdf(htmlVenta(det))
+
+export const verPdfPresupuesto = (det: DetallePresupuesto): Promise<void> =>
+  window.api.verPdf(htmlPresupuesto(det))

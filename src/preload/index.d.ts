@@ -170,6 +170,7 @@ export interface Api {
   listarBackups: () => Promise<BackupInfo[]>
 
   imprimirHtml: (html: string) => Promise<void>
+  verPdf: (html: string) => Promise<void>
 }
 
 declare global {
