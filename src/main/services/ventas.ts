@@ -66,3 +66,22 @@ export function listarVentas(limit = 50) {
     [limit]
   )
 }
+
+export function detalleVenta(id: number) {
+  const venta = get<{
+    id: number; fecha: string; lista: string; total: number; cliente_nombre: string | null
+  }>(
+    `SELECT v.*, c.nombre AS cliente_nombre
+     FROM ventas v LEFT JOIN clientes c ON c.id = v.cliente_id
+     WHERE v.id = ?`,
+    [id]
+  )
+  if (!venta) return null
+  const items = all<{ nombre: string; cantidad: number; precio_unit: number }>(
+    `SELECT vi.cantidad, vi.precio_unit, a.nombre
+     FROM venta_items vi JOIN articulos a ON a.id = vi.articulo_id
+     WHERE vi.venta_id = ?`,
+    [id]
+  )
+  return { ...venta, items }
+}

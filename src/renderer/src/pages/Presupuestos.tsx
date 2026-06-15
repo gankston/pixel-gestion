@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Page from '../components/Page'
 import { Button, TextInput, Field, Modal, Badge } from '../components/ui'
 import { money, fmtFecha } from '../lib/format'
+import { imprimirPresupuesto } from '../lib/print'
 import type { ArticuloConPrecios, Cliente, Presupuesto } from '../../../preload'
 
 type Lista = 'mayorista' | 'consumidor'
@@ -94,6 +95,10 @@ export default function Presupuestos(): JSX.Element {
     await window.api.anularPresupuesto(id)
     recargar()
   }
+  async function imprimir(id: number): Promise<void> {
+    const det = await window.api.detallePresupuesto(id)
+    if (det) imprimirPresupuesto(det)
+  }
 
   return (
     <Page titulo="Presupuestos" acciones={<Button onClick={abrir}>+ Nuevo presupuesto</Button>}>
@@ -120,6 +125,9 @@ export default function Presupuestos(): JSX.Element {
                   <Badge tone={TONO[p.estado]}>{p.estado}</Badge>
                 </td>
                 <td className="px-4 py-2 text-right">
+                  <button onClick={() => imprimir(p.id)} className="mr-3 text-muted hover:underline">
+                    Imprimir
+                  </button>
                   {p.estado === 'vigente' && (
                     <>
                       <button onClick={() => aprobar(p.id)} className="mr-3 text-ok hover:underline">

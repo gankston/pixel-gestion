@@ -79,6 +79,58 @@ export interface Presupuesto {
   cliente_nombre: string | null
 }
 
+export interface DetalleVenta {
+  id: number
+  fecha: string
+  lista: string
+  total: number
+  cliente_nombre: string | null
+  items: Array<{ nombre: string; cantidad: number; precio_unit: number }>
+}
+
+export interface DetallePresupuesto {
+  id: number
+  fecha: string
+  lista: string
+  total: number
+  estado: string
+  cliente_nombre: string | null
+  vencimiento: string | null
+  items: Array<{ nombre: string; cantidad: number; precio_unit: number }>
+}
+
+export interface VentaDia {
+  dia: string
+  cantidad: number
+  monto: number
+}
+
+export interface ProductoTop {
+  nombre: string
+  unidades: number
+  monto: number
+}
+
+export interface StockBajo {
+  nombre: string
+  codigo_barras: string | null
+  stock_fisico: number
+  stock_reservado: number
+  stock_disponible: number
+  stock_minimo: number
+}
+
+export interface ResumenMes {
+  mes: { cantidad: number; monto: number }
+  hoy: { cantidad: number; monto: number }
+}
+
+export interface BackupInfo {
+  archivo: string
+  fecha: string
+  tamanoKb: number
+}
+
 export interface Api {
   listArticulos: (filtro?: string) => Promise<ArticuloConPrecios[]>
   buscarCodigo: (codigo: string) => Promise<ArticuloConPrecios | null>
@@ -90,10 +142,12 @@ export interface Api {
 
   crearVenta: (input: unknown) => Promise<{ ventaId: number; total: number }>
   listVentas: () => Promise<Venta[]>
+  detalleVenta: (id: number) => Promise<DetalleVenta | null>
 
   crearPresupuesto: (input: unknown) => Promise<number>
   listPresupuestos: () => Promise<Presupuesto[]>
   itemsPresupuesto: (id: number) => Promise<unknown[]>
+  detallePresupuesto: (id: number) => Promise<DetallePresupuesto | null>
   aprobarPresupuesto: (id: number) => Promise<void>
   anularPresupuesto: (id: number) => Promise<void>
 
@@ -106,6 +160,16 @@ export interface Api {
   actualizarCliente: (id: number, data: unknown) => Promise<void>
   ventasCliente: (clienteId: number) => Promise<Venta[]>
   registrarPago: (input: unknown) => Promise<number>
+
+  reporteVentasPorDia: (dias?: number) => Promise<VentaDia[]>
+  reporteProductosTop: (limite?: number) => Promise<ProductoTop[]>
+  reporteStockBajo: () => Promise<StockBajo[]>
+  reporteResumenMes: () => Promise<ResumenMes>
+
+  hacerBackup: () => Promise<{ ok: boolean; archivo: string | null }>
+  listarBackups: () => Promise<BackupInfo[]>
+
+  imprimirHtml: (html: string) => Promise<void>
 }
 
 declare global {

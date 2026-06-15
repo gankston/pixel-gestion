@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import Page from '../components/Page'
 import { Button, TextInput, Badge } from '../components/ui'
 import { money } from '../lib/format'
+import { imprimirVenta } from '../lib/print'
 import type { ArticuloConPrecios, Cliente } from '../../../preload'
 
 type Lista = 'mayorista' | 'consumidor'
@@ -32,6 +33,7 @@ export default function Ventas(): JSX.Element {
   const [resultados, setResultados] = useState<ArticuloConPrecios[]>([])
   const [medio, setMedio] = useState<Medio>('efectivo')
   const [mensaje, setMensaje] = useState('')
+  const [ultimaVentaId, setUltimaVentaId] = useState<number | null>(null)
   const scanRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -96,6 +98,7 @@ export default function Ventas(): JSX.Element {
     const pagos = fiar ? [] : [{ medio, monto: total }]
     const r = await window.api.crearVenta({ clienteId, lista, items, pagos })
     setCarrito([])
+    setUltimaVentaId(r.ventaId)
     setMensaje(
       fiar
         ? `Venta #${r.ventaId} a cuenta corriente por ${money(r.total)}.`
@@ -169,8 +172,19 @@ export default function Ventas(): JSX.Element {
           )}
 
           {mensaje && (
-            <div className="mt-4 rounded border border-ok/30 bg-ok/10 px-4 py-2 text-sm text-ok">
-              {mensaje}
+            <div className="mt-4 flex items-center gap-3 rounded border border-ok/30 bg-ok/10 px-4 py-2 text-sm text-ok">
+              <span className="flex-1">{mensaje}</span>
+              {ultimaVentaId && (
+                <button
+                  className="shrink-0 rounded border border-ok/40 px-3 py-1 text-xs font-medium hover:bg-ok/10"
+                  onClick={async () => {
+                    const det = await window.api.detalleVenta(ultimaVentaId)
+                    if (det) imprimirVenta(det)
+                  }}
+                >
+                  Imprimir
+                </button>
+              )}
             </div>
           )}
         </div>

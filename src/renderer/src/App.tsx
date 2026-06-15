@@ -5,8 +5,9 @@ import Stock from './pages/Stock'
 import Presupuestos from './pages/Presupuestos'
 import Caja from './pages/Caja'
 import Clientes from './pages/Clientes'
+import Reportes from './pages/Reportes'
 
-type SeccionId = 'ventas' | 'articulos' | 'stock' | 'presupuestos' | 'caja' | 'clientes'
+type SeccionId = 'ventas' | 'articulos' | 'stock' | 'presupuestos' | 'caja' | 'clientes' | 'reportes'
 
 const NAV: { id: SeccionId; label: string }[] = [
   { id: 'ventas', label: 'Ventas' },
@@ -14,7 +15,8 @@ const NAV: { id: SeccionId; label: string }[] = [
   { id: 'stock', label: 'Stock' },
   { id: 'presupuestos', label: 'Presupuestos' },
   { id: 'caja', label: 'Caja diaria' },
-  { id: 'clientes', label: 'Clientes' }
+  { id: 'clientes', label: 'Clientes' },
+  { id: 'reportes', label: 'Reportes' }
 ]
 
 const PAGINAS: Record<SeccionId, () => JSX.Element> = {
@@ -23,7 +25,8 @@ const PAGINAS: Record<SeccionId, () => JSX.Element> = {
   stock: Stock,
   presupuestos: Presupuestos,
   caja: Caja,
-  clientes: Clientes
+  clientes: Clientes,
+  reportes: Reportes
 }
 
 function App(): JSX.Element {

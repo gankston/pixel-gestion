@@ -61,6 +61,25 @@ export function itemsPresupuesto(presupuestoId: number) {
   return all('SELECT * FROM presupuesto_items WHERE presupuesto_id = ?', [presupuestoId])
 }
 
+export function detallePresupuesto(id: number) {
+  const pres = get<{
+    id: number; fecha: string; lista: string; total: number; estado: string; cliente_nombre: string | null; vencimiento: string | null
+  }>(
+    `SELECT p.*, c.nombre AS cliente_nombre
+     FROM presupuestos p LEFT JOIN clientes c ON c.id = p.cliente_id
+     WHERE p.id = ?`,
+    [id]
+  )
+  if (!pres) return null
+  const items = all<{ nombre: string; cantidad: number; precio_unit: number }>(
+    `SELECT pi.cantidad, pi.precio_unit, a.nombre
+     FROM presupuesto_items pi JOIN articulos a ON a.id = pi.articulo_id
+     WHERE pi.presupuesto_id = ?`,
+    [id]
+  )
+  return { ...pres, items }
+}
+
 /** Aprueba un presupuesto: libera la reserva y lo convierte en venta (descuenta stock fisico real). */
 export function aprobarPresupuesto(presupuestoId: number): void {
   tx(() => {

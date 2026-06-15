@@ -3,6 +3,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { initDb } from './db'
 import { registerIpc } from './ipc'
+import { hacerBackup } from './services/backup'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -43,6 +44,7 @@ app.whenReady().then(async () => {
 
   await initDb()
   registerIpc()
+  hacerBackup()
   createWindow()
 
   app.on('activate', () => {

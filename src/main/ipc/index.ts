@@ -1,9 +1,11 @@
-import { ipcMain } from 'electron'
+import { ipcMain, BrowserWindow } from 'electron'
 import * as articulos from '../services/articulos'
 import * as ventas from '../services/ventas'
 import * as presupuestos from '../services/presupuestos'
 import * as caja from '../services/caja'
 import * as clientes from '../services/clientes'
+import * as reportes from '../services/reportes'
+import * as backup from '../services/backup'
 import { registrarMovimiento } from '../services/stock'
 import { calcularPrecios, type ArticuloPrecio } from '../services/precios'
 
@@ -32,6 +34,7 @@ export function registerIpc(): void {
   // Ventas
   ipcMain.handle('ventas:crear', (_e, input: ventas.VentaInput) => ventas.crearVenta(input))
   ipcMain.handle('ventas:list', () => ventas.listarVentas())
+  ipcMain.handle('ventas:detalle', (_e, id: number) => ventas.detalleVenta(id))
 
   // Presupuestos
   ipcMain.handle('presupuestos:crear', (_e, input: presupuestos.PresupuestoInput) =>
@@ -39,6 +42,7 @@ export function registerIpc(): void {
   )
   ipcMain.handle('presupuestos:list', () => presupuestos.listarPresupuestos())
   ipcMain.handle('presupuestos:items', (_e, id: number) => presupuestos.itemsPresupuesto(id))
+  ipcMain.handle('presupuestos:detalle', (_e, id: number) => presupuestos.detallePresupuesto(id))
   ipcMain.handle('presupuestos:aprobar', (_e, id: number) => presupuestos.aprobarPresupuesto(id))
   ipcMain.handle('presupuestos:anular', (_e, id: number) => presupuestos.anularPresupuesto(id))
 
@@ -57,4 +61,28 @@ export function registerIpc(): void {
   )
   ipcMain.handle('clientes:ventas', (_e, clienteId: number) => clientes.ventasCliente(clienteId))
   ipcMain.handle('clientes:pago', (_e, input: clientes.PagoInput) => clientes.registrarPago(input))
+
+  // Reportes
+  ipcMain.handle('reportes:ventasPorDia', (_e, dias?: number) => reportes.ventasPorDia(dias ?? 30))
+  ipcMain.handle('reportes:productosTop', (_e, limite?: number) => reportes.productosTopVentas(limite ?? 10))
+  ipcMain.handle('reportes:stockBajo', () => reportes.stockBajoMinimo())
+  ipcMain.handle('reportes:resumenMes', () => reportes.resumenMes())
+
+  // Backup
+  ipcMain.handle('backup:hacer', () => backup.hacerBackup())
+  ipcMain.handle('backup:listar', () => backup.listarBackups())
+
+  // Impresion A4
+  ipcMain.handle('print:html', (_e, html: string) => {
+    return new Promise<void>((resolve) => {
+      const win = new BrowserWindow({ show: false, webPreferences: { javascript: false } })
+      win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
+      win.webContents.once('did-finish-load', () => {
+        win.webContents.print(
+          { silent: false, printBackground: true, pageSize: 'A4' },
+          () => { win.destroy(); resolve() }
+        )
+      })
+    })
+  })
 }

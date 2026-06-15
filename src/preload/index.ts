@@ -18,11 +18,13 @@ const api = {
   // Ventas
   crearVenta: (input: unknown) => ipcRenderer.invoke('ventas:crear', input),
   listVentas: () => ipcRenderer.invoke('ventas:list'),
+  detalleVenta: (id: number) => ipcRenderer.invoke('ventas:detalle', id),
 
   // Presupuestos
   crearPresupuesto: (input: unknown) => ipcRenderer.invoke('presupuestos:crear', input),
   listPresupuestos: () => ipcRenderer.invoke('presupuestos:list'),
   itemsPresupuesto: (id: number) => ipcRenderer.invoke('presupuestos:items', id),
+  detallePresupuesto: (id: number) => ipcRenderer.invoke('presupuestos:detalle', id),
   aprobarPresupuesto: (id: number) => ipcRenderer.invoke('presupuestos:aprobar', id),
   anularPresupuesto: (id: number) => ipcRenderer.invoke('presupuestos:anular', id),
 
@@ -38,7 +40,20 @@ const api = {
   actualizarCliente: (id: number, data: unknown) =>
     ipcRenderer.invoke('clientes:actualizar', id, data),
   ventasCliente: (clienteId: number) => ipcRenderer.invoke('clientes:ventas', clienteId),
-  registrarPago: (input: unknown) => ipcRenderer.invoke('clientes:pago', input)
+  registrarPago: (input: unknown) => ipcRenderer.invoke('clientes:pago', input),
+
+  // Reportes
+  reporteVentasPorDia: (dias?: number) => ipcRenderer.invoke('reportes:ventasPorDia', dias),
+  reporteProductosTop: (limite?: number) => ipcRenderer.invoke('reportes:productosTop', limite),
+  reporteStockBajo: () => ipcRenderer.invoke('reportes:stockBajo'),
+  reporteResumenMes: () => ipcRenderer.invoke('reportes:resumenMes'),
+
+  // Backup
+  hacerBackup: () => ipcRenderer.invoke('backup:hacer'),
+  listarBackups: () => ipcRenderer.invoke('backup:listar'),
+
+  // Impresion A4
+  imprimirHtml: (html: string) => ipcRenderer.invoke('print:html', html)
 }
 
 if (process.contextIsolated) {
