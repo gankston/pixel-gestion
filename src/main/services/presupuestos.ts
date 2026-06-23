@@ -33,7 +33,7 @@ export async function crearPresupuesto(input: PresupuestoInput): Promise<number>
   return tx(async () => {
     const venc = input.vencimiento
       ? input.vencimiento
-      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
 
     const presupId = await insert(
       "INSERT INTO presupuestos (cliente_id, lista, vencimiento, estado, total) VALUES ($1,$2,$3,'vigente',0)",

@@ -35,8 +35,7 @@ export default function Stock(): JSX.Element {
     setErrorStock(null)
     setGuardando(true)
     try {
-      if (cant > 0) await window.api.ingresoStock(accion.art.id, cant)
-      else await window.api.ajusteStock(accion.art.id, cant)
+      await window.api.ajusteStock(accion.art.id, cant)
       setAccion(null)
       recargar()
     } catch (e) {

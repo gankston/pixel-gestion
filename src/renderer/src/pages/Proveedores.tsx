@@ -213,7 +213,6 @@ export default function Proveedores(): JSX.Element {
             {proveedores.map((p) => (
               <Fragment key={p.id}>
                 <tr
-                  key={p.id}
                   className="cursor-pointer border-b border-line last:border-0 hover:bg-app"
                   onClick={() => toggleExpandido(p.id)}
                 >
