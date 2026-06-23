@@ -37,6 +37,7 @@ export default function Caja(): JSX.Element {
   const [saldoInicial, setSaldoInicial] = useState('0')
   const [abriendo, setAbriendo] = useState(false)
   const [errorCierre, setErrorCierre] = useState<string | null>(null)
+  const [errorAbrir, setErrorAbrir] = useState<string | null>(null)
 
   function recargar(): void {
     window.api.estadoCaja().then(setEstado)
@@ -44,12 +45,15 @@ export default function Caja(): JSX.Element {
   useEffect(recargar, [])
 
   async function confirmarAbrir(): Promise<void> {
+    setErrorAbrir(null)
     setAbriendo(true)
     try {
       await window.api.abrirCaja(Number(saldoInicial) || 0)
       setModalAbrir(false)
       setSaldoInicial('0')
       recargar()
+    } catch (e) {
+      setErrorAbrir(e instanceof Error ? e.message : 'No se pudo abrir la caja')
     } finally {
       setAbriendo(false)
     }
@@ -99,6 +103,12 @@ export default function Caja(): JSX.Element {
             </>
           }
         >
+          {errorAbrir && (
+            <div className="mb-3 flex items-center justify-between rounded border border-danger/30 bg-danger/8 px-3 py-2 text-[12px] text-danger">
+              <span>{errorAbrir}</span>
+              <button onClick={() => setErrorAbrir(null)} className="ml-3 text-danger/60 hover:text-danger">✕</button>
+            </div>
+          )}
           <Field label="Saldo inicial en efectivo ($)">
             <TextInput
               type="number"

@@ -26,6 +26,8 @@ export default function Proveedores(): JSX.Element {
   const [editando, setEditando] = useState<Proveedor | null>(null)
   const [form, setForm] = useState<FormProv>(FORM_VACIO)
   const [guardando, setGuardando] = useState(false)
+  const [errorGuardarProv, setErrorGuardarProv] = useState<string | null>(null)
+  const [errorFactura, setErrorFactura] = useState<string | null>(null)
 
   const [modalFactura, setModalFactura] = useState<Proveedor | null>(null)
   const [montoFactura, setMontoFactura] = useState('')
@@ -57,12 +59,14 @@ export default function Proveedores(): JSX.Element {
   function abrirNuevo(): void {
     setEditando(null)
     setForm(FORM_VACIO)
+    setErrorGuardarProv(null)
     setModalProv(true)
   }
 
   function abrirEditar(p: Proveedor): void {
     setEditando(p)
     setForm({ nombre: p.nombre, cuit: p.cuit ?? '', telefono: p.telefono ?? '', email: p.email ?? '' })
+    setErrorGuardarProv(null)
     setModalProv(true)
   }
 
@@ -84,6 +88,8 @@ export default function Proveedores(): JSX.Element {
       setModalProv(false)
       setFacturasMap({})
       recargar()
+    } catch (e) {
+      setErrorGuardarProv(e instanceof Error ? e.message : 'No se pudo guardar el proveedor')
     } finally {
       setGuardando(false)
     }
@@ -103,6 +109,7 @@ export default function Proveedores(): JSX.Element {
     if (!modalFactura || !montoFactura) return
     const monto = Number(montoFactura)
     if (monto <= 0) return
+    setErrorFactura(null)
     setGuardando(true)
     try {
       await window.api.cargarFacturaProveedor(modalFactura.id, monto, numFactura.trim() || undefined)
@@ -111,6 +118,8 @@ export default function Proveedores(): JSX.Element {
       setNumFactura('')
       setFacturasMap({})
       recargar()
+    } catch (e) {
+      setErrorFactura(e instanceof Error ? e.message : 'No se pudo cargar la factura')
     } finally {
       setGuardando(false)
     }
@@ -307,16 +316,22 @@ export default function Proveedores(): JSX.Element {
       <Modal
         open={modalProv}
         title={editando ? 'Editar proveedor' : 'Nuevo proveedor'}
-        onClose={() => setModalProv(false)}
+        onClose={() => { setModalProv(false); setErrorGuardarProv(null) }}
         footer={
           <>
-            <Button variant="secondary" onClick={() => setModalProv(false)}>Cancelar</Button>
+            <Button variant="secondary" onClick={() => { setModalProv(false); setErrorGuardarProv(null) }}>Cancelar</Button>
             <Button onClick={guardarProv} disabled={guardando || !form.nombre.trim()}>
               {guardando ? 'Guardando...' : 'Guardar'}
             </Button>
           </>
         }
       >
+        {errorGuardarProv && (
+          <div className="mb-3 flex items-center justify-between rounded border border-danger/30 bg-danger/8 px-3 py-2 text-[12px] text-danger">
+            <span>{errorGuardarProv}</span>
+            <button onClick={() => setErrorGuardarProv(null)} className="ml-3 text-danger/60 hover:text-danger">✕</button>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <Field label="Nombre" className="col-span-2">
             <TextInput
@@ -352,16 +367,22 @@ export default function Proveedores(): JSX.Element {
       <Modal
         open={!!modalFactura}
         title={`Cargar factura — ${modalFactura?.nombre}`}
-        onClose={() => setModalFactura(null)}
+        onClose={() => { setModalFactura(null); setErrorFactura(null) }}
         footer={
           <>
-            <Button variant="secondary" onClick={() => setModalFactura(null)}>Cancelar</Button>
+            <Button variant="secondary" onClick={() => { setModalFactura(null); setErrorFactura(null) }}>Cancelar</Button>
             <Button onClick={cargarFactura} disabled={guardando || !montoFactura}>
               {guardando ? 'Cargando...' : 'Cargar factura'}
             </Button>
           </>
         }
       >
+        {errorFactura && (
+          <div className="mb-3 flex items-center justify-between rounded border border-danger/30 bg-danger/8 px-3 py-2 text-[12px] text-danger">
+            <span>{errorFactura}</span>
+            <button onClick={() => setErrorFactura(null)} className="ml-3 text-danger/60 hover:text-danger">✕</button>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <Field label="N° Factura">
             <TextInput

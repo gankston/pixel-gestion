@@ -13,7 +13,6 @@ export async function ventasPorDia(dias = 30) {
 }
 
 export async function productosTopVentas(limite = 10) {
-  const inicioMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
   return query<{ nombre: string; unidades: number; monto: number }>(`
     SELECT a.nombre,
            SUM(vi.cantidad)::int AS unidades,
@@ -21,11 +20,11 @@ export async function productosTopVentas(limite = 10) {
     FROM venta_items vi
     JOIN articulos a ON a.id = vi.articulo_id
     JOIN ventas v ON v.id = vi.venta_id
-    WHERE v.fecha >= $2
+    WHERE v.fecha >= DATE_TRUNC('month', NOW())
     GROUP BY vi.articulo_id, a.nombre
     ORDER BY unidades DESC
     LIMIT $1
-  `, [limite, inicioMes])
+  `, [limite])
 }
 
 export async function stockBajoMinimo() {
@@ -47,33 +46,26 @@ export async function stockBajoMinimo() {
 }
 
 export async function resumenMes() {
-  const ahora = new Date()
-  const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1).toISOString()
-
   const mes = await queryOne<{ cantidad: number; monto: number }>(`
     SELECT COUNT(*)::int AS cantidad, COALESCE(SUM(total), 0)::int AS monto
-    FROM ventas WHERE fecha >= $1
-  `, [inicioMes]) ?? { cantidad: 0, monto: 0 }
-
-  const hoyStart = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate()).toISOString()
-  const manana = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + 1).toISOString()
+    FROM ventas WHERE fecha >= DATE_TRUNC('month', NOW())
+  `) ?? { cantidad: 0, monto: 0 }
 
   const hoy = await queryOne<{ cantidad: number; monto: number }>(`
     SELECT COUNT(*)::int AS cantidad, COALESCE(SUM(total), 0)::int AS monto
-    FROM ventas WHERE fecha >= $1 AND fecha < $2
-  `, [hoyStart, manana]) ?? { cantidad: 0, monto: 0 }
+    FROM ventas WHERE fecha >= DATE_TRUNC('day', NOW()) AND fecha < DATE_TRUNC('day', NOW()) + INTERVAL '1 day'
+  `) ?? { cantidad: 0, monto: 0 }
 
   return { mes, hoy }
 }
 
 export async function ventasPorLista() {
-  const inicioMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
   return query<{ lista: string; cantidad: number; monto: number }>(`
     SELECT lista,
            COUNT(*)::int AS cantidad,
            COALESCE(SUM(total), 0)::int AS monto
     FROM ventas
-    WHERE fecha >= $1
+    WHERE fecha >= DATE_TRUNC('month', NOW())
     GROUP BY lista
-  `, [inicioMes])
+  `)
 }

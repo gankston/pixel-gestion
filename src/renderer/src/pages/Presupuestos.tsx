@@ -84,6 +84,7 @@ export default function Presupuestos(): JSX.Element {
           precioUnit: precioDe(it.art, listaPrecio)
         }))
       })
+      setError('')
       setModal(false)
       recargar()
     } catch (e) {

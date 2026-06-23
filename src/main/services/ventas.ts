@@ -60,7 +60,7 @@ export async function crearVenta(input: VentaInput): Promise<{ ventaId: number; 
     }
 
     const saldo = total - pagado
-    if (input.clienteId && saldo > 0.0001) {
+    if (input.clienteId && saldo > 0.01) {
       await run('UPDATE clientes SET saldo_cta_cte = saldo_cta_cte + $1 WHERE id = $2', [saldo, input.clienteId])
     }
 

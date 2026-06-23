@@ -88,7 +88,6 @@ export default function CuentaCorriente(): JSX.Element {
             {clientes.map((c) => (
               <Fragment key={c.id}>
                 <tr
-                  key={c.id}
                   className="border-b border-line last:border-0 hover:bg-app cursor-pointer"
                   onClick={() => toggleExpandido(c.id)}
                 >

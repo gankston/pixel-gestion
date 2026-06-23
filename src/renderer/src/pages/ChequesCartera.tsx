@@ -30,6 +30,7 @@ export default function ChequesCartera(): JSX.Element {
   const [form, setForm] = useState<FormCheque>(FORM_VACIO)
   const [guardando, setGuardando] = useState(false)
   const [errorCobro, setErrorCobro] = useState<string | null>(null)
+  const [errorGuardar, setErrorGuardar] = useState<string | null>(null)
 
   function recargar(): void {
     window.api.listCheques(filtro === 'todos' ? undefined : filtro).then(setCheques)
@@ -38,6 +39,7 @@ export default function ChequesCartera(): JSX.Element {
 
   async function guardarCheque(): Promise<void> {
     if (!form.monto || !form.fechaCobro) return
+    setErrorGuardar(null)
     setGuardando(true)
     try {
       await window.api.registrarCheque({
@@ -50,6 +52,8 @@ export default function ChequesCartera(): JSX.Element {
       setModalNuevo(false)
       setForm(FORM_VACIO)
       recargar()
+    } catch (e) {
+      setErrorGuardar(e instanceof Error ? e.message : 'No se pudo registrar el cheque')
     } finally {
       setGuardando(false)
     }
@@ -174,16 +178,22 @@ export default function ChequesCartera(): JSX.Element {
       <Modal
         open={modalNuevo}
         title="Registrar cheque recibido"
-        onClose={() => setModalNuevo(false)}
+        onClose={() => { setModalNuevo(false); setErrorGuardar(null) }}
         footer={
           <>
-            <Button variant="secondary" onClick={() => setModalNuevo(false)}>Cancelar</Button>
+            <Button variant="secondary" onClick={() => { setModalNuevo(false); setErrorGuardar(null) }}>Cancelar</Button>
             <Button onClick={guardarCheque} disabled={guardando || !form.monto || !form.fechaCobro}>
               {guardando ? 'Guardando...' : 'Registrar'}
             </Button>
           </>
         }
       >
+        {errorGuardar && (
+          <div className="mb-3 flex items-center justify-between rounded border border-danger/30 bg-danger/8 px-3 py-2 text-[12px] text-danger">
+            <span>{errorGuardar}</span>
+            <button onClick={() => setErrorGuardar(null)} className="ml-3 text-danger/60 hover:text-danger">✕</button>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <Field label="N° Cheque">
             <TextInput
