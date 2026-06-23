@@ -241,8 +241,9 @@ export default function Proveedores(): JSX.Element {
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); setModalPago({ prov: p, factura: null }); setMontoPago(p.saldo_cta_cte > 0 ? String(p.saldo_cta_cte) : '') }}
-                        className="flex h-7 w-7 items-center justify-center rounded text-muted transition-colors hover:text-ok"
-                        title="Registrar pago"
+                        disabled={p.saldo_cta_cte <= 0}
+                        className="flex h-7 w-7 items-center justify-center rounded text-muted transition-colors hover:text-ok disabled:cursor-not-allowed disabled:opacity-30"
+                        title={p.saldo_cta_cte <= 0 ? 'Sin saldo pendiente' : 'Registrar pago'}
                       >
                         <CreditCard size={13} />
                       </button>
