@@ -76,6 +76,7 @@ export default function Articulos(): JSX.Element {
 
   async function guardar(): Promise<void> {
     if (!form || !form.nombre.trim()) return
+    setErrorGuardar(null)
     try {
       if (form.id) await window.api.actualizarArticulo(form.id, form)
       else await window.api.crearArticulo(form)

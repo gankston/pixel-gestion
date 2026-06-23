@@ -438,7 +438,12 @@ export default function Proveedores(): JSX.Element {
                 onChange={(e) => {
                   const m = e.target.value as Medio
                   setMedioPago(m)
-                  if (m === 'cheque' && chequesCartera.length === 0) cargarChequesCartera()
+                  if (m === 'cheque' && chequesCartera.length === 0) {
+                    cargarChequesCartera()
+                  } else if (m !== 'cheque' && modalPago) {
+                    const saldo = modalPago.factura ? modalPago.factura.saldo : modalPago.prov.saldo_cta_cte
+                    setMontoPago(saldo > 0 ? String(saldo) : '')
+                  }
                 }}
                 className="w-full rounded border border-line bg-panel px-3 py-[7px] text-[13px] outline-none focus:border-primary"
               >
