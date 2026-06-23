@@ -128,6 +128,5 @@ export async function cargarFactura(proveedorId: number, total: number, numero?:
       `UPDATE proveedores SET saldo_cta_cte = saldo_cta_cte + $1 WHERE id = $2`,
       [total, proveedorId]
     )
-    return factId
   })
 }

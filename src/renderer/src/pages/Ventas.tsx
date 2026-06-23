@@ -152,6 +152,10 @@ export default function Ventas(): JSX.Element {
     setCarrito([])
     setUltimaVentaId(r.ventaId)
     setMensajeError(false)
+    if (fiar) {
+      setMedio('efectivo')
+      setChequeForm(FORM_CHEQUE_VACIO)
+    }
     setMensaje(
       fiar
         ? `Venta #${r.ventaId} a cuenta corriente por ${money(r.total)}.`
