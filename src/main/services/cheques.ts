@@ -1,4 +1,4 @@
-import { query, run, insert } from '../db'
+import { query, queryOne, run, insert } from '../db'
 
 export interface ChequeInput {
   numero?: string | null
@@ -35,6 +35,9 @@ export async function registrarCheque(data: ChequeInput): Promise<number> {
 }
 
 export async function marcarCobrado(id: number): Promise<void> {
+  const ch = await queryOne<{ estado: string }>('SELECT estado FROM cheques_cartera WHERE id = $1', [id])
+  if (!ch) throw new Error('Cheque no encontrado')
+  if (ch.estado !== 'en_cartera') throw new Error('Solo se pueden cobrar cheques que están en cartera')
   await run(`UPDATE cheques_cartera SET estado = 'cobrado' WHERE id = $1`, [id])
 }
 

@@ -60,6 +60,15 @@ export interface PagoInput {
 
 export async function registrarPago(input: PagoInput): Promise<number> {
   return tx(async () => {
+    const clienteRow = await queryOne<{ saldo: number }>(
+      'SELECT saldo_cta_cte AS saldo FROM clientes WHERE id = $1',
+      [input.clienteId]
+    )
+    if (!clienteRow) throw new Error('Cliente no encontrado')
+    if (input.monto > clienteRow.saldo + 0.01) {
+      throw new Error(`El monto ($${input.monto.toFixed(2)}) supera el saldo del cliente ($${clienteRow.saldo.toFixed(2)})`)
+    }
+
     const caja = await asegurarCajaAbierta()
     const pagoId = await insert(
       'INSERT INTO pagos (cliente_id, medio_pago, monto) VALUES ($1,$2,$3)',

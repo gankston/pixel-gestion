@@ -1,4 +1,4 @@
-import { run, insert } from '../db'
+import { run, insert, queryOne } from '../db'
 
 export type TipoMovimiento = 'compra' | 'venta' | 'ajuste' | 'reserva' | 'liberacion'
 
@@ -17,9 +17,16 @@ export async function registrarMovimiento(
 
   switch (tipo) {
     case 'compra':
-    case 'ajuste':
       await run('UPDATE articulos SET stock_fisico = stock_fisico + $1 WHERE id = $2', [cantidad, articuloId])
       break
+    case 'ajuste': {
+      const art = await queryOne<{ stock_fisico: number }>('SELECT stock_fisico FROM articulos WHERE id = $1', [articuloId])
+      if (art && art.stock_fisico + cantidad < 0) {
+        throw new Error(`Stock insuficiente para ajuste: quedaría en ${art.stock_fisico + cantidad}`)
+      }
+      await run('UPDATE articulos SET stock_fisico = stock_fisico + $1 WHERE id = $2', [cantidad, articuloId])
+      break
+    }
     case 'venta':
       await run('UPDATE articulos SET stock_fisico = stock_fisico - $1 WHERE id = $2', [cantidad, articuloId])
       break

@@ -183,6 +183,7 @@ export function registerIpc(): void {
           cleanHtml()
           writeFileSync(tmpPdf, pdfBuffer)
           shell.openPath(tmpPdf)
+          setTimeout(() => { try { unlinkSync(tmpPdf) } catch { /* ignore */ } }, 30000)
           resolve()
         } catch (e) {
           if (!win.isDestroyed()) win.destroy()

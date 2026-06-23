@@ -15,10 +15,15 @@ export default function Login({ onLogin }: Props): JSX.Element {
   const [loadingUsers, setLoadingUsers] = useState(true)
 
   useEffect(() => {
-    window.api.listarUsuarios().then((u) => {
-      setUsuarios(u)
-      setLoadingUsers(false)
-    })
+    window.api.listarUsuarios()
+      .then((u) => {
+        setUsuarios(u)
+        setLoadingUsers(false)
+      })
+      .catch(() => {
+        setError('No se pudo conectar con la base de datos. Verificá la conexión e intentá de nuevo.')
+        setLoadingUsers(false)
+      })
   }, [])
 
   function seleccionarPerfil(u: Usuario): void {
@@ -63,6 +68,15 @@ export default function Login({ onLogin }: Props): JSX.Element {
                 <div className="flex justify-center py-4">
                   <Loader2 size={20} className="animate-spin text-white/30" />
                 </div>
+              ) : error ? (
+                <div className="flex items-center gap-2 rounded border border-danger/30 bg-danger/10 px-3 py-3">
+                  <AlertCircle size={14} className="shrink-0 text-danger" />
+                  <p className="text-[12px] text-danger">{error}</p>
+                </div>
+              ) : usuarios.length === 0 ? (
+                <p className="py-4 text-center text-[13px] text-white/40">
+                  No hay usuarios configurados en el sistema.
+                </p>
               ) : (
                 <div className="space-y-2">
                   {usuarios.map((u) => (

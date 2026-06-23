@@ -66,6 +66,15 @@ export async function crearFactura(data: FacturaInput): Promise<number> {
 
 export async function registrarPagoProveedor(data: PagoProvInput): Promise<number> {
   return tx(async () => {
+    const prov = await queryOne<{ saldo_cta_cte: number }>(
+      'SELECT saldo_cta_cte FROM proveedores WHERE id = $1',
+      [data.proveedorId]
+    )
+    if (!prov) throw new Error('Proveedor no encontrado')
+    if (data.monto > prov.saldo_cta_cte + 0.01) {
+      throw new Error(`El pago ($${data.monto.toFixed(2)}) supera el saldo del proveedor ($${prov.saldo_cta_cte.toFixed(2)})`)
+    }
+
     const pagoId = await insert(
       `INSERT INTO pagos_proveedor (proveedor_id, factura_id, medio_pago, cheque_id, monto)
        VALUES ($1,$2,$3,$4,$5)`,

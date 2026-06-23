@@ -27,9 +27,10 @@ interface ItemRow {
   precio_unit: number
 }
 
+interface StockRow { nombre: string; stock_disponible: number }
+
 export async function crearPresupuesto(input: PresupuestoInput): Promise<number> {
   return tx(async () => {
-    // Vencimiento por defecto: 30 días
     const venc = input.vencimiento
       ? input.vencimiento
       : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
@@ -38,6 +39,19 @@ export async function crearPresupuesto(input: PresupuestoInput): Promise<number>
       "INSERT INTO presupuestos (cliente_id, lista, vencimiento, estado, total) VALUES ($1,$2,$3,'vigente',0)",
       [input.clienteId ?? null, input.lista, venc]
     )
+
+    // Validar stock antes de reservar
+    for (const it of input.items) {
+      const art = await queryOne<StockRow>(
+        `SELECT nombre, (stock_fisico - stock_reservado) AS stock_disponible FROM articulos WHERE id = $1`,
+        [it.articuloId]
+      )
+      if (!art || art.stock_disponible < it.cantidad) {
+        const nombre = art?.nombre ?? `#${it.articuloId}`
+        throw new Error(`Stock insuficiente: "${nombre}" (disponible: ${art?.stock_disponible ?? 0}, pedido: ${it.cantidad})`)
+      }
+    }
+
     let total = 0
     for (const it of input.items) {
       await insert(
@@ -52,7 +66,17 @@ export async function crearPresupuesto(input: PresupuestoInput): Promise<number>
   })
 }
 
+async function expirarPresupuestosVencidos(): Promise<void> {
+  const vencidos = await query<{ id: number }>(
+    `SELECT id FROM presupuestos WHERE estado = 'vigente' AND vencimiento < NOW()`
+  )
+  for (const p of vencidos) {
+    await anularPresupuesto(p.id)
+  }
+}
+
 export async function listarPresupuestos() {
+  await expirarPresupuestosVencidos()
   return query(
     `SELECT p.id, p.fecha::TEXT AS fecha, p.vencimiento::TEXT AS vencimiento, p.estado, p.lista, p.total,
             p.cliente_id, c.nombre AS cliente_nombre

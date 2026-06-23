@@ -110,7 +110,10 @@ export default function Stock(): JSX.Element {
         footer={
           <>
             <Button variant="secondary" onClick={() => setAccion(null)}>Cancelar</Button>
-            <Button onClick={confirmar} disabled={guardando || !cantidad || Number(cantidad) === 0}>
+            <Button
+              onClick={confirmar}
+              disabled={guardando || !cantidad || Number(cantidad) === 0 || (!!accion && accion.art.stock_fisico + Number(cantidad) < 0)}
+            >
               {guardando ? 'Guardando...' : 'Confirmar'}
             </Button>
           </>
@@ -120,7 +123,7 @@ export default function Stock(): JSX.Element {
           <div className="space-y-3">
             <p className="text-[13px] text-ink">
               <span className="font-semibold">{accion.art.nombre}</span>
-              <span className="ml-2 text-muted">— stock actual: {accion.art.stock_disponible}</span>
+              <span className="ml-2 text-muted">— stock físico: {accion.art.stock_fisico}</span>
             </p>
             <Field label="Cantidad (negativo para quitar, positivo para agregar)">
               <TextInput
@@ -134,9 +137,12 @@ export default function Stock(): JSX.Element {
             {cantidad !== '' && Number(cantidad) !== 0 && (
               <p className="text-[12px] text-muted">
                 Stock resultante:{' '}
-                <span className={`font-semibold ${accion.art.stock_disponible + Number(cantidad) < 0 ? 'text-danger' : 'text-ink'}`}>
-                  {accion.art.stock_disponible + Number(cantidad)}
+                <span className={`font-semibold ${accion.art.stock_fisico + Number(cantidad) < 0 ? 'text-danger' : 'text-ink'}`}>
+                  {accion.art.stock_fisico + Number(cantidad)}
                 </span>
+                {accion.art.stock_fisico + Number(cantidad) < 0 && (
+                  <span className="ml-2 text-[11px] text-danger">— no puede quedar negativo</span>
+                )}
               </p>
             )}
           </div>

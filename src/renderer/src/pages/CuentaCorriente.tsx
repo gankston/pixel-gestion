@@ -39,6 +39,7 @@ export default function CuentaCorriente(): JSX.Element {
 
   async function registrarPago(): Promise<void> {
     if (!pago || pago.monto <= 0) return
+    if (pago.monto > pago.cliente.saldo_cta_cte + 0.01) return
     setCargando(true)
     try {
       await window.api.registrarPago({
@@ -165,7 +166,7 @@ export default function CuentaCorriente(): JSX.Element {
         footer={
           <>
             <Button variant="secondary" onClick={() => setPago(null)}>Cancelar</Button>
-            <Button onClick={registrarPago} disabled={cargando}>
+            <Button onClick={registrarPago} disabled={cargando || !pago || pago.monto <= 0 || pago.monto > pago.cliente.saldo_cta_cte + 0.01}>
               {cargando ? 'Registrando...' : 'Registrar pago'}
             </Button>
           </>
@@ -190,13 +191,20 @@ export default function CuentaCorriente(): JSX.Element {
               <TextInput
                 type="number"
                 value={pago.monto}
+                max={pago.cliente.saldo_cta_cte}
                 onChange={(e) => setPago({ ...pago, monto: Number(e.target.value) })}
               />
             </Field>
-            <p className="col-span-2 text-[12px] text-muted">
-              Saldo actual: <span className="font-semibold text-danger">{money(pago.cliente.saldo_cta_cte)}</span>.
-              El pago reduce el saldo e ingresa a caja.
-            </p>
+            <div className="col-span-2 space-y-1">
+              <p className="text-[12px] text-muted">
+                Saldo actual: <span className="font-semibold text-danger">{money(pago.cliente.saldo_cta_cte)}</span>
+              </p>
+              {pago.monto > pago.cliente.saldo_cta_cte + 0.01 && (
+                <p className="text-[12px] text-danger">
+                  El monto supera el saldo del cliente.
+                </p>
+              )}
+            </div>
           </div>
         )}
       </Modal>
