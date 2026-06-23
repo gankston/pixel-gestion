@@ -381,16 +381,6 @@ export default function Ventas(): JSX.Element {
                     className="w-full rounded border border-line bg-panel px-2.5 py-1.5 text-[12px] text-ink outline-none focus:border-primary"
                   />
                 </Field>
-                <Field label="Tipo">
-                  <select
-                    value={chequeForm.tipo}
-                    onChange={(e) => setChequeForm((f) => ({ ...f, tipo: e.target.value as 'personal' | 'empresa' }))}
-                    className="w-full rounded border border-line bg-panel px-2.5 py-1.5 text-[12px] text-ink outline-none focus:border-primary"
-                  >
-                    <option value="personal">Personal</option>
-                    <option value="empresa">Empresa</option>
-                  </select>
-                </Field>
                 <Field label="Fecha de emisión">
                   <input
                     type="date"
@@ -406,6 +396,16 @@ export default function Ventas(): JSX.Element {
                     onChange={(e) => setChequeForm((f) => ({ ...f, fechaCobro: e.target.value }))}
                     className="w-full rounded border border-line bg-panel px-2.5 py-1.5 text-[12px] text-ink outline-none focus:border-primary"
                   />
+                </Field>
+                <Field label="Tipo" className="col-span-2">
+                  <select
+                    value={chequeForm.tipo}
+                    onChange={(e) => setChequeForm((f) => ({ ...f, tipo: e.target.value as 'personal' | 'empresa' }))}
+                    className="w-full rounded border border-line bg-panel px-2.5 py-1.5 text-[12px] text-ink outline-none focus:border-primary"
+                  >
+                    <option value="personal">Personal</option>
+                    <option value="empresa">Empresa</option>
+                  </select>
                 </Field>
               </div>
             )}
