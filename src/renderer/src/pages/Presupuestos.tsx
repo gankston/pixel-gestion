@@ -89,7 +89,7 @@ export default function Presupuestos(): JSX.Element {
       setModal(false)
       recargar()
     } catch (e) {
-      setErrorGuardar(e instanceof Error ? e.message : 'No se pudo crear el presupuesto')
+      setErrorGuardar((e instanceof Error ? e.message : 'No se pudo crear el presupuesto').replace(/^Error invoking remote method '[^']+': Error: /, ''))
     }
   }
 

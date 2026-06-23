@@ -39,7 +39,7 @@ export default function Stock(): JSX.Element {
       setAccion(null)
       recargar()
     } catch (e) {
-      setErrorStock(e instanceof Error ? e.message : 'No se pudo actualizar el stock')
+      setErrorStock((e instanceof Error ? e.message : 'No se pudo actualizar el stock').replace(/^Error invoking remote method '[^']+': Error: /, ''))
     } finally {
       setGuardando(false)
     }

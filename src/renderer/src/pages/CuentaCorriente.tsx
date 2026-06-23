@@ -57,7 +57,7 @@ export default function CuentaCorriente(): JSX.Element {
       setVentasMap({})
       recargar()
     } catch (e) {
-      setErrorPago(e instanceof Error ? e.message : 'No se pudo registrar el pago')
+      setErrorPago((e instanceof Error ? e.message : 'No se pudo registrar el pago').replace(/^Error invoking remote method '[^']+': Error: /, ''))
     } finally {
       setCargando(false)
     }
@@ -108,7 +108,7 @@ export default function CuentaCorriente(): JSX.Element {
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
-                          setPago({ cliente: c, medio: 'efectivo', monto: c.saldo_cta_cte })
+                          setErrorPago(null); setPago({ cliente: c, medio: 'efectivo', monto: c.saldo_cta_cte })
                         }}
                         className="flex h-7 w-7 items-center justify-center rounded border border-transparent text-muted transition-colors hover:border-ok/40 hover:text-ok"
                         title="Registrar pago"

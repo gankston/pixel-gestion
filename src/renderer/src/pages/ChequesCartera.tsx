@@ -53,7 +53,7 @@ export default function ChequesCartera(): JSX.Element {
       setForm(FORM_VACIO)
       recargar()
     } catch (e) {
-      setErrorGuardar(e instanceof Error ? e.message : 'No se pudo registrar el cheque')
+      setErrorGuardar((e instanceof Error ? e.message : 'No se pudo registrar el cheque').replace(/^Error invoking remote method '[^']+': Error: /, ''))
     } finally {
       setGuardando(false)
     }
@@ -65,7 +65,7 @@ export default function ChequesCartera(): JSX.Element {
       await window.api.marcarChequeCobrado(id)
       recargar()
     } catch (e) {
-      setErrorCobro(e instanceof Error ? e.message : 'No se pudo marcar el cheque como cobrado')
+      setErrorCobro((e instanceof Error ? e.message : 'No se pudo marcar el cheque como cobrado').replace(/^Error invoking remote method '[^']+': Error: /, ''))
     }
   }
 
@@ -96,7 +96,7 @@ export default function ChequesCartera(): JSX.Element {
           ))}
         </div>
         <div className="flex-1" />
-        <Button onClick={() => { setForm(FORM_VACIO); setModalNuevo(true) }}>
+        <Button onClick={() => { setForm(FORM_VACIO); setErrorGuardar(null); setModalNuevo(true) }}>
           <Plus size={14} />
           Registrar cheque
         </Button>

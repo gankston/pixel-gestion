@@ -93,7 +93,7 @@ export default function Proveedores(): JSX.Element {
       setFacturasMap({})
       recargar()
     } catch (e) {
-      setErrorGuardarProv(e instanceof Error ? e.message : 'No se pudo guardar el proveedor')
+      setErrorGuardarProv((e instanceof Error ? e.message : 'No se pudo guardar el proveedor').replace(/^Error invoking remote method '[^']+': Error: /, ''))
     } finally {
       setGuardando(false)
     }
@@ -105,7 +105,7 @@ export default function Proveedores(): JSX.Element {
       await window.api.eliminarProveedor(id)
       recargar()
     } catch (e) {
-      setErrorProv(e instanceof Error ? e.message : 'No se pudo eliminar el proveedor')
+      setErrorProv((e instanceof Error ? e.message : 'No se pudo eliminar el proveedor').replace(/^Error invoking remote method '[^']+': Error: /, ''))
     }
   }
 
@@ -123,7 +123,7 @@ export default function Proveedores(): JSX.Element {
       setFacturasMap({})
       recargar()
     } catch (e) {
-      setErrorFactura(e instanceof Error ? e.message : 'No se pudo cargar la factura')
+      setErrorFactura((e instanceof Error ? e.message : 'No se pudo cargar la factura').replace(/^Error invoking remote method '[^']+': Error: /, ''))
     } finally {
       setGuardando(false)
     }
@@ -138,7 +138,7 @@ export default function Proveedores(): JSX.Element {
         setMontoPago(String(cheques[0].monto))
       }
     } catch (e) {
-      setErrorPago(e instanceof Error ? e.message : 'No se pudieron cargar los cheques')
+      setErrorPago((e instanceof Error ? e.message : 'No se pudieron cargar los cheques').replace(/^Error invoking remote method '[^']+': Error: /, ''))
     }
   }
 
@@ -165,7 +165,7 @@ export default function Proveedores(): JSX.Element {
       setFacturasMap({})
       recargar()
     } catch (e) {
-      setErrorPago(e instanceof Error ? e.message : 'No se pudo registrar el pago')
+      setErrorPago((e instanceof Error ? e.message : 'No se pudo registrar el pago').replace(/^Error invoking remote method '[^']+': Error: /, ''))
     } finally {
       setPagando(false)
     }

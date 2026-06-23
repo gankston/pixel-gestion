@@ -66,7 +66,7 @@ export default function Reportes(): JSX.Element {
       setStockBajo(sb)
       setVentasLista(vl)
     } catch (e) {
-      setErrorReportes(e instanceof Error ? e.message : 'No se pudieron cargar los reportes')
+      setErrorReportes((e instanceof Error ? e.message : 'No se pudieron cargar los reportes').replace(/^Error invoking remote method '[^']+': Error: /, ''))
     }
   }
   useEffect(() => { cargar() }, [])

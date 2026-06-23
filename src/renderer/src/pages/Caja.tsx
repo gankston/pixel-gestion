@@ -53,7 +53,7 @@ export default function Caja(): JSX.Element {
       setSaldoInicial('0')
       recargar()
     } catch (e) {
-      setErrorAbrir(e instanceof Error ? e.message : 'No se pudo abrir la caja')
+      setErrorAbrir((e instanceof Error ? e.message : 'No se pudo abrir la caja').replace(/^Error invoking remote method '[^']+': Error: /, ''))
     } finally {
       setAbriendo(false)
     }
@@ -67,7 +67,7 @@ export default function Caja(): JSX.Element {
       await window.api.cerrarCaja(estado.caja.id, estado.caja.saldo_inicial + estado.resumen.efectivo)
       recargar()
     } catch (e) {
-      setErrorCierre(e instanceof Error ? e.message : 'No se pudo cerrar la caja')
+      setErrorCierre((e instanceof Error ? e.message : 'No se pudo cerrar la caja').replace(/^Error invoking remote method '[^']+': Error: /, ''))
     }
   }
 

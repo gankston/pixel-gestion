@@ -83,7 +83,7 @@ export default function Articulos(): JSX.Element {
       setForm(null)
       recargar()
     } catch (e) {
-      setErrorGuardar(e instanceof Error ? e.message : 'No se pudo guardar el artículo')
+      setErrorGuardar((e instanceof Error ? e.message : 'No se pudo guardar el artículo').replace(/^Error invoking remote method '[^']+': Error: /, ''))
     }
   }
 
@@ -93,7 +93,7 @@ export default function Articulos(): JSX.Element {
       await window.api.eliminarArticulo(a.id)
       recargar()
     } catch (e) {
-      setErrorEliminar(e instanceof Error ? e.message : 'No se pudo eliminar el artículo')
+      setErrorEliminar((e instanceof Error ? e.message : 'No se pudo eliminar el artículo').replace(/^Error invoking remote method '[^']+': Error: /, ''))
     }
   }
 
