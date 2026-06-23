@@ -38,12 +38,8 @@ export async function ventasCliente(clienteId: number) {
     `SELECT v.id, v.fecha::TEXT AS fecha, v.total
      FROM ventas v
      WHERE v.cliente_id = $1
-       AND v.total > COALESCE(
-         (SELECT SUM(m.monto) FROM caja_movimientos m
-          WHERE m.referencia_tipo = 'venta' AND m.referencia_id = v.id AND m.tipo = 'ingreso'),
-         0
-       )
-     ORDER BY v.id DESC`,
+     ORDER BY v.id DESC
+     LIMIT 50`,
     [clienteId]
   )
 }

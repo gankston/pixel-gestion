@@ -94,6 +94,7 @@ export default function Presupuestos(): JSX.Element {
 
   async function aprobar(id: number): Promise<void> {
     if (!confirm('Aprobar el presupuesto? Se descuenta el stock y se genera la venta.')) return
+    setError('')
     try {
       await window.api.aprobarPresupuesto(id)
       recargar()
@@ -104,6 +105,7 @@ export default function Presupuestos(): JSX.Element {
   }
   async function anular(id: number): Promise<void> {
     if (!confirm('Anular el presupuesto? Se libera el stock reservado.')) return
+    setError('')
     try {
       await window.api.anularPresupuesto(id)
       recargar()

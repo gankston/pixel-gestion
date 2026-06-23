@@ -410,10 +410,10 @@ export default function Proveedores(): JSX.Element {
       <Modal
         open={!!modalPago}
         title={`Pagar a ${modalPago?.prov.nombre}`}
-        onClose={() => { setModalPago(null); setChequesCartera([]); setChequeId(null); setErrorPago(null) }}
+        onClose={() => { setModalPago(null); setChequesCartera([]); setChequeId(null); setMedioPago('efectivo'); setErrorPago(null) }}
         footer={
           <>
-            <Button variant="secondary" onClick={() => { setModalPago(null); setChequesCartera([]); setChequeId(null); setErrorPago(null) }}>Cancelar</Button>
+            <Button variant="secondary" onClick={() => { setModalPago(null); setChequesCartera([]); setChequeId(null); setMedioPago('efectivo'); setErrorPago(null) }}>Cancelar</Button>
             <Button onClick={registrarPago} disabled={pagando || !montoPago || (medioPago === 'cheque' && !chequeId)}>
               {pagando ? 'Registrando...' : 'Registrar pago'}
             </Button>
