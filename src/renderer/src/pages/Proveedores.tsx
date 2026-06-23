@@ -51,8 +51,12 @@ export default function Proveedores(): JSX.Element {
     if (expandido === id) { setExpandido(null); return }
     setExpandido(id)
     if (!facturasMap[id]) {
-      const f = await window.api.facturasProveedor(id)
-      setFacturasMap((m) => ({ ...m, [id]: f }))
+      try {
+        const f = await window.api.facturasProveedor(id)
+        setFacturasMap((m) => ({ ...m, [id]: f }))
+      } catch {
+        setFacturasMap((m) => ({ ...m, [id]: [] }))
+      }
     }
   }
 

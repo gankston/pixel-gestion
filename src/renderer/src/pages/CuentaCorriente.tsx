@@ -33,8 +33,12 @@ export default function CuentaCorriente(): JSX.Element {
     }
     setExpandido(id)
     if (!ventasMap[id]) {
-      const ventas = await window.api.ventasCliente(id)
-      setVentasMap((m) => ({ ...m, [id]: ventas }))
+      try {
+        const ventas = await window.api.ventasCliente(id)
+        setVentasMap((m) => ({ ...m, [id]: ventas }))
+      } catch {
+        setVentasMap((m) => ({ ...m, [id]: [] }))
+      }
     }
   }
 

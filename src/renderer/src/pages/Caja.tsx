@@ -40,7 +40,7 @@ export default function Caja(): JSX.Element {
   const [errorAbrir, setErrorAbrir] = useState<string | null>(null)
 
   function recargar(): void {
-    window.api.estadoCaja().then(setEstado)
+    window.api.estadoCaja().then(setEstado).catch(() => setEstado({ caja: null, resumen: null, movimientos: [] }))
   }
   useEffect(recargar, [])
 

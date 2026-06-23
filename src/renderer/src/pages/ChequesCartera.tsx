@@ -38,7 +38,7 @@ export default function ChequesCartera(): JSX.Element {
   useEffect(recargar, [filtro])
 
   async function guardarCheque(): Promise<void> {
-    if (!form.monto || !form.fechaCobro) return
+    if (!form.monto || Number(form.monto) <= 0 || !form.fechaCobro) return
     setErrorGuardar(null)
     setGuardando(true)
     try {
@@ -182,7 +182,7 @@ export default function ChequesCartera(): JSX.Element {
         footer={
           <>
             <Button variant="secondary" onClick={() => { setModalNuevo(false); setErrorGuardar(null) }}>Cancelar</Button>
-            <Button onClick={guardarCheque} disabled={guardando || !form.monto || !form.fechaCobro}>
+            <Button onClick={guardarCheque} disabled={guardando || !form.monto || Number(form.monto) <= 0 || !form.fechaCobro}>
               {guardando ? 'Guardando...' : 'Registrar'}
             </Button>
           </>

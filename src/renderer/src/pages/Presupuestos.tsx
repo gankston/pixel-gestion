@@ -75,6 +75,7 @@ export default function Presupuestos(): JSX.Element {
 
   async function guardar(): Promise<void> {
     if (carrito.length === 0) return
+    setErrorGuardar('')
     try {
       await window.api.crearPresupuesto({
         clienteId,
