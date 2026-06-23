@@ -209,10 +209,10 @@ export default function Articulos(): JSX.Element {
             <Field label="Stock mínimo">
               <TextInput type="number" value={form.stock_minimo} onChange={(e) => set('stock_minimo', Number(e.target.value))} />
             </Field>
-            <Field label="Markup mayorista (%)">
+            <Field label="Ganancia mayorista (%)">
               <TextInput type="number" value={form.markup_mayorista_pct} onChange={(e) => set('markup_mayorista_pct', Number(e.target.value))} />
             </Field>
-            <Field label="Markup consumidor (%)">
+            <Field label="Ganancia consumidor (%)">
               <TextInput type="number" value={form.markup_consumidor_pct} onChange={(e) => set('markup_consumidor_pct', Number(e.target.value))} />
             </Field>
             {!form.id && (
