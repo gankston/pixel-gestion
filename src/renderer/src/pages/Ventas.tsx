@@ -16,10 +16,13 @@ interface ItemCarrito {
 interface ChequeForm {
   numero: string
   banco: string
+  librador: string
+  tipo: 'personal' | 'empresa'
+  fechaEmision: string
   fechaCobro: string
 }
 
-const FORM_CHEQUE_VACIO: ChequeForm = { numero: '', banco: '', fechaCobro: '' }
+const FORM_CHEQUE_VACIO: ChequeForm = { numero: '', banco: '', librador: '', tipo: 'personal', fechaEmision: '', fechaCobro: '' }
 
 const MEDIOS: { id: Medio; label: string }[] = [
   { id: 'efectivo', label: 'Efectivo' },
@@ -134,7 +137,10 @@ export default function Ventas(): JSX.Element {
           numero: chequeForm.numero.trim() || null,
           banco: chequeForm.banco.trim() || null,
           monto: total,
+          fechaEmision: chequeForm.fechaEmision || null,
           fechaCobro: chequeForm.fechaCobro,
+          librador: chequeForm.librador.trim() || null,
+          tipo: chequeForm.tipo,
           origenTipo: 'venta',
           origenId: r.ventaId
         })
@@ -366,7 +372,34 @@ export default function Ventas(): JSX.Element {
                     className="w-full rounded border border-line bg-panel px-2.5 py-1.5 text-[12px] text-ink outline-none focus:border-primary"
                   />
                 </Field>
-                <Field label="Fecha de cobro" className="col-span-2">
+                <Field label="A nombre de" className="col-span-2">
+                  <input
+                    type="text"
+                    value={chequeForm.librador}
+                    onChange={(e) => setChequeForm((f) => ({ ...f, librador: e.target.value }))}
+                    placeholder="Nombre o razón social"
+                    className="w-full rounded border border-line bg-panel px-2.5 py-1.5 text-[12px] text-ink outline-none focus:border-primary"
+                  />
+                </Field>
+                <Field label="Tipo">
+                  <select
+                    value={chequeForm.tipo}
+                    onChange={(e) => setChequeForm((f) => ({ ...f, tipo: e.target.value as 'personal' | 'empresa' }))}
+                    className="w-full rounded border border-line bg-panel px-2.5 py-1.5 text-[12px] text-ink outline-none focus:border-primary"
+                  >
+                    <option value="personal">Personal</option>
+                    <option value="empresa">Empresa</option>
+                  </select>
+                </Field>
+                <Field label="Fecha de emisión">
+                  <input
+                    type="date"
+                    value={chequeForm.fechaEmision}
+                    onChange={(e) => setChequeForm((f) => ({ ...f, fechaEmision: e.target.value }))}
+                    className="w-full rounded border border-line bg-panel px-2.5 py-1.5 text-[12px] text-ink outline-none focus:border-primary"
+                  />
+                </Field>
+                <Field label="Fecha de cobro">
                   <input
                     type="date"
                     value={chequeForm.fechaCobro}

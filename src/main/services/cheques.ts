@@ -6,11 +6,13 @@ export interface ChequeInput {
   monto: number
   fechaEmision?: string | null
   fechaCobro: string
+  librador?: string | null
+  tipo?: 'personal' | 'empresa'
   origenTipo?: 'venta' | 'pago_cliente'
   origenId?: number | null
 }
 
-const CHEQUE_COLS = `id, numero, banco, monto, fecha_emision::TEXT AS fecha_emision, fecha_cobro::TEXT AS fecha_cobro, estado, origen_tipo, origen_id, destino_proveedor_id`
+const CHEQUE_COLS = `id, numero, banco, monto, fecha_emision::TEXT AS fecha_emision, fecha_cobro::TEXT AS fecha_cobro, estado, origen_tipo, origen_id, destino_proveedor_id, librador, tipo`
 
 export async function listarCheques(estado?: string) {
   return estado
@@ -20,14 +22,16 @@ export async function listarCheques(estado?: string) {
 
 export async function registrarCheque(data: ChequeInput): Promise<number> {
   return insert(
-    `INSERT INTO cheques_cartera (numero, banco, monto, fecha_emision, fecha_cobro, origen_tipo, origen_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+    `INSERT INTO cheques_cartera (numero, banco, monto, fecha_emision, fecha_cobro, librador, tipo, origen_tipo, origen_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
     [
       data.numero ?? null,
       data.banco ?? null,
       data.monto,
       data.fechaEmision ?? null,
       data.fechaCobro,
+      data.librador ?? null,
+      data.tipo ?? 'personal',
       data.origenTipo ?? null,
       data.origenId ?? null
     ]

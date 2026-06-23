@@ -481,6 +481,8 @@ export default function Proveedores(): JSX.Element {
                     {chequesCartera.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.numero ? `N° ${c.numero}` : `Cheque #${c.id}`}
+                        {c.librador ? ` — ${c.librador}` : ''}
+                        {` (${c.tipo})`}
                         {c.banco ? ` — ${c.banco}` : ''}
                         {` — ${money(c.monto)}`}
                         {` (cobro: ${c.fecha_cobro?.slice(0, 10)})`}

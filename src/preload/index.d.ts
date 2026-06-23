@@ -77,6 +77,8 @@ export interface ChequeCartera {
   estado: 'en_cartera' | 'cobrado' | 'entregado'
   origen_tipo: string | null
   origen_id: number | null
+  librador: string | null
+  tipo: 'personal' | 'empresa'
 }
 
 export interface ResumenCaja {

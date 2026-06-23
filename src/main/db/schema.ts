@@ -164,8 +164,12 @@ CREATE TABLE IF NOT EXISTS cheques_cartera (
   origen_tipo TEXT CHECK (origen_tipo IN ('venta','pago_cliente')),
   origen_id INTEGER,
   destino_proveedor_id INTEGER REFERENCES proveedores(id),
+  librador TEXT,
+  tipo TEXT NOT NULL DEFAULT 'personal' CHECK (tipo IN ('personal','empresa')),
   creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+ALTER TABLE cheques_cartera ADD COLUMN IF NOT EXISTS librador TEXT;
+ALTER TABLE cheques_cartera ADD COLUMN IF NOT EXISTS tipo TEXT NOT NULL DEFAULT 'personal' CHECK (tipo IN ('personal','empresa'));
 
 CREATE TABLE IF NOT EXISTS pagos_proveedor (
   id SERIAL PRIMARY KEY,

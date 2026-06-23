@@ -11,6 +11,8 @@ interface FormCheque {
   numero: string
   banco: string
   monto: string
+  librador: string
+  tipo: 'personal' | 'empresa'
   fechaEmision: string
   fechaCobro: string
 }
@@ -19,6 +21,8 @@ const FORM_VACIO: FormCheque = {
   numero: '',
   banco: '',
   monto: '',
+  librador: '',
+  tipo: 'personal',
   fechaEmision: '',
   fechaCobro: ''
 }
@@ -46,6 +50,8 @@ export default function ChequesCartera(): JSX.Element {
         numero: form.numero.trim() || null,
         banco: form.banco.trim() || null,
         monto: Number(form.monto),
+        librador: form.librador.trim() || null,
+        tipo: form.tipo,
         fechaEmision: form.fechaEmision || null,
         fechaCobro: form.fechaCobro
       })
@@ -125,7 +131,9 @@ export default function ChequesCartera(): JSX.Element {
           <thead>
             <tr className="border-b border-line bg-app text-left">
               <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted">N° Cheque</th>
+              <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted">A nombre de</th>
               <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Banco</th>
+              <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Tipo</th>
               <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Fecha cobro</th>
               <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted">Monto</th>
               <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Estado</th>
@@ -138,7 +146,11 @@ export default function ChequesCartera(): JSX.Element {
                 <td className="px-4 py-2.5 font-mono text-[12px] text-ink">
                   {c.numero ?? `#${c.id}`}
                 </td>
+                <td className="px-4 py-2.5 text-ink">{c.librador ?? '—'}</td>
                 <td className="px-4 py-2.5 text-muted">{c.banco ?? '—'}</td>
+                <td className="px-4 py-2.5">
+                  <Badge tone={c.tipo === 'empresa' ? 'primary' : 'muted'}>{c.tipo}</Badge>
+                </td>
                 <td className="px-4 py-2.5 font-mono text-[12px] text-ink">
                   {c.fecha_cobro?.slice(0, 10) ?? '—'}
                 </td>
@@ -166,7 +178,7 @@ export default function ChequesCartera(): JSX.Element {
             ))}
             {cheques.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-muted">
+                <td colSpan={8} className="px-4 py-10 text-center text-muted">
                   Sin cheques en esta categoría.
                 </td>
               </tr>
@@ -208,6 +220,23 @@ export default function ChequesCartera(): JSX.Element {
               onChange={(e) => setForm({ ...form, banco: e.target.value })}
             />
           </Field>
+          <Field label="A nombre de" className="col-span-2">
+            <TextInput
+              value={form.librador}
+              onChange={(e) => setForm({ ...form, librador: e.target.value })}
+              placeholder="Nombre o razón social"
+            />
+          </Field>
+          <Field label="Tipo">
+            <select
+              value={form.tipo}
+              onChange={(e) => setForm({ ...form, tipo: e.target.value as 'personal' | 'empresa' })}
+              className="w-full rounded border border-line bg-panel px-3 py-[7px] text-[13px] outline-none focus:border-primary"
+            >
+              <option value="personal">Personal</option>
+              <option value="empresa">Empresa</option>
+            </select>
+          </Field>
           <Field label="Monto">
             <TextInput
               type="number"
@@ -215,18 +244,18 @@ export default function ChequesCartera(): JSX.Element {
               onChange={(e) => setForm({ ...form, monto: e.target.value })}
             />
           </Field>
+          <Field label="Fecha de emisión">
+            <TextInput
+              type="date"
+              value={form.fechaEmision}
+              onChange={(e) => setForm({ ...form, fechaEmision: e.target.value })}
+            />
+          </Field>
           <Field label="Fecha de cobro">
             <TextInput
               type="date"
               value={form.fechaCobro}
               onChange={(e) => setForm({ ...form, fechaCobro: e.target.value })}
-            />
-          </Field>
-          <Field label="Fecha emisión">
-            <TextInput
-              type="date"
-              value={form.fechaEmision}
-              onChange={(e) => setForm({ ...form, fechaEmision: e.target.value })}
             />
           </Field>
         </div>
