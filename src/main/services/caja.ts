@@ -14,8 +14,11 @@ export interface CajaRow {
 
 const hoy = (): string => new Date().toISOString().slice(0, 10) // YYYY-MM-DD
 
+const SELECT_CAJA = `SELECT id, fecha::TEXT, estado, saldo_inicial, saldo_final,
+  abierta_en::TEXT AS abierta_en, cerrada_en::TEXT AS cerrada_en FROM caja_diaria`
+
 export async function cajaAbierta(): Promise<CajaRow | null> {
-  return queryOne<CajaRow>("SELECT * FROM caja_diaria WHERE estado = 'abierta' ORDER BY id DESC LIMIT 1")
+  return queryOne<CajaRow>(`${SELECT_CAJA} WHERE estado = 'abierta' ORDER BY id DESC LIMIT 1`)
 }
 
 export async function abrirCaja(saldoInicial = 0): Promise<CajaRow> {
@@ -25,7 +28,7 @@ export async function abrirCaja(saldoInicial = 0): Promise<CajaRow> {
     'INSERT INTO caja_diaria (fecha, estado, saldo_inicial) VALUES ($1,$2,$3)',
     [hoy(), 'abierta', saldoInicial]
   )
-  return (await queryOne<CajaRow>('SELECT * FROM caja_diaria WHERE id = $1', [id]))!
+  return (await queryOne<CajaRow>(`${SELECT_CAJA} WHERE id = $1`, [id]))!
 }
 
 export async function asegurarCajaAbierta(): Promise<CajaRow> {
@@ -75,7 +78,12 @@ export async function resumenCaja(cajaId: number): Promise<ResumenCaja> {
 }
 
 export async function movimientosCaja(cajaId: number) {
-  return query('SELECT * FROM caja_movimientos WHERE caja_id = $1 ORDER BY id DESC', [cajaId])
+  return query(
+    `SELECT id, caja_id, tipo, medio_pago, monto, referencia_tipo, referencia_id, descripcion,
+            fecha::TEXT AS fecha
+     FROM caja_movimientos WHERE caja_id = $1 ORDER BY id DESC`,
+    [cajaId]
+  )
 }
 
 export async function cerrarCaja(cajaId: number, saldoFinal: number): Promise<void> {
