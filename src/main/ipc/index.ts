@@ -8,13 +8,40 @@ import * as presupuestos from '../services/presupuestos'
 import * as caja from '../services/caja'
 import * as clientes from '../services/clientes'
 import * as reportes from '../services/reportes'
-import * as backup from '../services/backup'
 import { registrarMovimiento } from '../services/stock'
 import { calcularPrecios, type ArticuloPrecio } from '../services/precios'
+import { login } from '../services/auth'
+import { initDb, dbConnected, dbError } from '../db'
+import { getConfig, saveConfig } from '../config'
 
-/** Registra todos los canales IPC que el renderer puede invocar. */
 export function registerIpc(): void {
   ipcMain.handle('app:ping', () => 'pong')
+
+  // Config / DB setup
+  ipcMain.handle('app:dbStatus', () => {
+    const config = getConfig()
+    return {
+      connected: dbConnected,
+      needsSetup: !config,
+      error: dbError
+    }
+  })
+
+  ipcMain.handle('app:initDb', async (_e, url: string) => {
+    try {
+      await initDb(url)
+      saveConfig({ databaseUrl: url })
+      return { ok: true }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
+      return { ok: false, error: msg }
+    }
+  })
+
+  // Auth
+  ipcMain.handle('auth:login', async (_e, nombre: string, password: string) => {
+    return login(nombre, password)
+  })
 
   // Articulos
   ipcMain.handle('articulos:list', (_e, filtro?: string) => articulos.listarArticulos(filtro ?? ''))
@@ -58,11 +85,13 @@ export function registerIpc(): void {
 
   // Clientes
   ipcMain.handle('clientes:list', () => clientes.listarClientes())
+  ipcMain.handle('clientes:conDeuda', () => clientes.listarClientesConDeuda())
   ipcMain.handle('clientes:crear', (_e, data: clientes.ClienteInput) => clientes.crearCliente(data))
   ipcMain.handle('clientes:actualizar', (_e, id: number, data: clientes.ClienteInput) =>
     clientes.actualizarCliente(id, data)
   )
   ipcMain.handle('clientes:ventas', (_e, clienteId: number) => clientes.ventasCliente(clienteId))
+  ipcMain.handle('clientes:pagos', (_e, clienteId: number) => clientes.historialPagos(clienteId))
   ipcMain.handle('clientes:pago', (_e, input: clientes.PagoInput) => clientes.registrarPago(input))
 
   // Reportes
@@ -71,12 +100,11 @@ export function registerIpc(): void {
   ipcMain.handle('reportes:stockBajo', () => reportes.stockBajoMinimo())
   ipcMain.handle('reportes:resumenMes', () => reportes.resumenMes())
 
-  // Backup
-  ipcMain.handle('backup:hacer', () => backup.hacerBackup())
-  ipcMain.handle('backup:listar', () => backup.listarBackups())
+  // Backup: con PostgreSQL en Railway no aplica backup local
+  ipcMain.handle('backup:hacer', () => ({ ok: false, archivo: null }))
+  ipcMain.handle('backup:listar', () => [])
 
-  // Impresion A4: escribe HTML a archivo temporal y lo carga con loadFile()
-  // (data: URLs estan bloqueadas por CSP en Electron 20+)
+  // Impresion A4
   ipcMain.handle('print:html', (_e, html: string) => {
     return new Promise<void>((resolve, reject) => {
       const tmpFile = join(tmpdir(), `pixel-print-${Date.now()}.html`)
@@ -85,20 +113,13 @@ export function registerIpc(): void {
       } catch (e) {
         return reject(new Error(`No se pudo crear el archivo temporal: ${e}`))
       }
-
-      const cleanup = (): void => { try { unlinkSync(tmpFile) } catch { /* ya borrado */ } }
-
-      const win = new BrowserWindow({
-        show: false,
-        webPreferences: { javascript: false, sandbox: true }
-      })
-
+      const cleanup = (): void => { try { unlinkSync(tmpFile) } catch { /* ignore */ } }
+      const win = new BrowserWindow({ show: false, webPreferences: { javascript: false, sandbox: true } })
       const timeout = setTimeout(() => {
         if (!win.isDestroyed()) win.destroy()
         cleanup()
         reject(new Error('Timeout al preparar la impresion'))
       }, 15000)
-
       win.webContents.once('did-finish-load', () => {
         clearTimeout(timeout)
         win.webContents.print(
@@ -111,37 +132,28 @@ export function registerIpc(): void {
           }
         )
       })
-
       win.loadFile(tmpFile)
     })
   })
 
-  // Vista previa PDF: genera el PDF y lo abre con el visor del sistema
+  // Vista previa PDF
   ipcMain.handle('print:pdf', (_e, html: string) => {
     return new Promise<void>((resolve, reject) => {
       const stamp = Date.now()
       const tmpHtml = join(tmpdir(), `pixel-pdf-${stamp}.html`)
       const tmpPdf = join(tmpdir(), `pixel-pdf-${stamp}.pdf`)
-
       try {
         writeFileSync(tmpHtml, html, 'utf-8')
       } catch (e) {
         return reject(new Error(`No se pudo crear el archivo temporal: ${e}`))
       }
-
-      const cleanHtml = (): void => { try { unlinkSync(tmpHtml) } catch { /* ya borrado */ } }
-
-      const win = new BrowserWindow({
-        show: false,
-        webPreferences: { javascript: false, sandbox: true }
-      })
-
+      const cleanHtml = (): void => { try { unlinkSync(tmpHtml) } catch { /* ignore */ } }
+      const win = new BrowserWindow({ show: false, webPreferences: { javascript: false, sandbox: true } })
       const timeout = setTimeout(() => {
         if (!win.isDestroyed()) win.destroy()
         cleanHtml()
         reject(new Error('Timeout al generar el PDF'))
       }, 15000)
-
       win.webContents.once('did-finish-load', async () => {
         clearTimeout(timeout)
         try {
@@ -161,7 +173,6 @@ export function registerIpc(): void {
           reject(e)
         }
       })
-
       win.loadFile(tmpHtml)
     })
   })

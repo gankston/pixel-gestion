@@ -2,6 +2,7 @@ appId: com.pixelgestion.app
 productName: PIXEL GESTION
 directories:
   buildResources: build
+  output: C:\Users\Gaston\Desktop\PIXEL-GESTION-dist
 files:
   - '!**/.vscode/*'
   - '!src/*'

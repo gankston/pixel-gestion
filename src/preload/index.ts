@@ -1,8 +1,14 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
-// API segura expuesta al renderer. Todo pasa por IPC; el renderer nunca toca la DB directo.
 const api = {
+  // Setup / DB
+  dbStatus: () => ipcRenderer.invoke('app:dbStatus'),
+  initDb: (url: string) => ipcRenderer.invoke('app:initDb', url),
+
+  // Auth
+  login: (nombre: string, password: string) => ipcRenderer.invoke('auth:login', nombre, password),
+
   // Articulos
   listArticulos: (filtro?: string) => ipcRenderer.invoke('articulos:list', filtro),
   buscarCodigo: (codigo: string) => ipcRenderer.invoke('articulos:buscarCodigo', codigo),
@@ -36,10 +42,12 @@ const api = {
 
   // Clientes
   listClientes: () => ipcRenderer.invoke('clientes:list'),
+  listClientesConDeuda: () => ipcRenderer.invoke('clientes:conDeuda'),
   crearCliente: (data: unknown) => ipcRenderer.invoke('clientes:crear', data),
   actualizarCliente: (id: number, data: unknown) =>
     ipcRenderer.invoke('clientes:actualizar', id, data),
   ventasCliente: (clienteId: number) => ipcRenderer.invoke('clientes:ventas', clienteId),
+  pagosCliente: (clienteId: number) => ipcRenderer.invoke('clientes:pagos', clienteId),
   registrarPago: (input: unknown) => ipcRenderer.invoke('clientes:pago', input),
 
   // Reportes
@@ -48,7 +56,7 @@ const api = {
   reporteStockBajo: () => ipcRenderer.invoke('reportes:stockBajo'),
   reporteResumenMes: () => ipcRenderer.invoke('reportes:resumenMes'),
 
-  // Backup
+  // Backup (no-op con Railway)
   hacerBackup: () => ipcRenderer.invoke('backup:hacer'),
   listarBackups: () => ipcRenderer.invoke('backup:listar'),
 
@@ -65,7 +73,7 @@ if (process.contextIsolated) {
     console.error(error)
   }
 } else {
-  // @ts-ignore (definido en index.d.ts)
+  // @ts-ignore
   window.electron = electronAPI
   // @ts-ignore
   window.api = api

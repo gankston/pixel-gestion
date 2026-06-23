@@ -1,5 +1,17 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 
+export interface Usuario {
+  id: number
+  nombre: string
+  perfil: 'vendedor' | 'admin'
+}
+
+export interface DbStatus {
+  connected: boolean
+  needsSetup: boolean
+  error: string | null
+}
+
 export interface PreciosCalculados {
   netoFinal: number
   mayorista: number
@@ -39,6 +51,7 @@ export interface ResumenCaja {
   transferencia: number
   credito: number
   debito: number
+  cheque: number
   total: number
 }
 
@@ -77,6 +90,7 @@ export interface Presupuesto {
   total: number
   cliente_id: number | null
   cliente_nombre: string | null
+  vencimiento: string | null
 }
 
 export interface DetalleVenta {
@@ -125,13 +139,12 @@ export interface ResumenMes {
   hoy: { cantidad: number; monto: number }
 }
 
-export interface BackupInfo {
-  archivo: string
-  fecha: string
-  tamanoKb: number
-}
-
 export interface Api {
+  dbStatus: () => Promise<DbStatus>
+  initDb: (url: string) => Promise<{ ok: boolean; error?: string }>
+
+  login: (nombre: string, password: string) => Promise<Usuario>
+
   listArticulos: (filtro?: string) => Promise<ArticuloConPrecios[]>
   buscarCodigo: (codigo: string) => Promise<ArticuloConPrecios | null>
   crearArticulo: (data: unknown) => Promise<number>
@@ -156,9 +169,11 @@ export interface Api {
   cerrarCaja: (cajaId: number, saldoFinal: number) => Promise<void>
 
   listClientes: () => Promise<Cliente[]>
+  listClientesConDeuda: () => Promise<Cliente[]>
   crearCliente: (data: unknown) => Promise<number>
   actualizarCliente: (id: number, data: unknown) => Promise<void>
   ventasCliente: (clienteId: number) => Promise<Venta[]>
+  pagosCliente: (clienteId: number) => Promise<unknown[]>
   registrarPago: (input: unknown) => Promise<number>
 
   reporteVentasPorDia: (dias?: number) => Promise<VentaDia[]>
@@ -167,7 +182,7 @@ export interface Api {
   reporteResumenMes: () => Promise<ResumenMes>
 
   hacerBackup: () => Promise<{ ok: boolean; archivo: string | null }>
-  listarBackups: () => Promise<BackupInfo[]>
+  listarBackups: () => Promise<unknown[]>
 
   imprimirHtml: (html: string) => Promise<void>
   verPdf: (html: string) => Promise<void>

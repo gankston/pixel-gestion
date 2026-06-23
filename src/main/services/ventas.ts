@@ -1,4 +1,4 @@
-import { run, lastId, tx, all, get } from '../db'
+import { run, insert, query, queryOne, tx } from '../db'
 import { registrarMovimiento } from './stock'
 import { asegurarCajaAbierta, registrarMovimientoCaja, type MedioPago } from './caja'
 
@@ -19,68 +19,64 @@ export interface VentaInput {
   presupuestoId?: number | null
 }
 
-/** Registra una venta de forma atomica: items, baja de stock fisico, caja y cuenta corriente. */
-export function crearVenta(input: VentaInput): { ventaId: number; total: number } {
-  return tx(() => {
-    const caja = asegurarCajaAbierta()
-    run('INSERT INTO ventas (cliente_id, presupuesto_id, lista, total) VALUES (?, ?, ?, 0)', [
-      input.clienteId ?? null,
-      input.presupuestoId ?? null,
-      input.lista
-    ])
-    const ventaId = lastId()
+export async function crearVenta(input: VentaInput): Promise<{ ventaId: number; total: number }> {
+  return tx(async () => {
+    const caja = await asegurarCajaAbierta()
+    const ventaId = await insert(
+      'INSERT INTO ventas (cliente_id, presupuesto_id, lista, total) VALUES ($1,$2,$3,0)',
+      [input.clienteId ?? null, input.presupuestoId ?? null, input.lista]
+    )
 
     let total = 0
     for (const it of input.items) {
-      run(
-        'INSERT INTO venta_items (venta_id, articulo_id, cantidad, precio_unit) VALUES (?, ?, ?, ?)',
+      await insert(
+        'INSERT INTO venta_items (venta_id, articulo_id, cantidad, precio_unit) VALUES ($1,$2,$3,$4)',
         [ventaId, it.articuloId, it.cantidad, it.precioUnit]
       )
-      registrarMovimiento(it.articuloId, 'venta', it.cantidad, 'venta', ventaId)
+      await registrarMovimiento(it.articuloId, 'venta', it.cantidad, 'venta', ventaId)
       total += it.cantidad * it.precioUnit
     }
-    run('UPDATE ventas SET total = ? WHERE id = ?', [total, ventaId])
+    await run('UPDATE ventas SET total = $1 WHERE id = $2', [total, ventaId])
 
     let pagado = 0
     for (const p of input.pagos) {
       if (p.monto <= 0) continue
-      registrarMovimientoCaja(caja.id, 'ingreso', p.medio, p.monto, 'venta', ventaId, `Venta #${ventaId}`)
+      await registrarMovimientoCaja(caja.id, 'ingreso', p.medio, p.monto, 'venta', ventaId, `Venta #${ventaId}`)
       pagado += p.monto
     }
 
-    // El saldo impago (fiado) va a la cuenta corriente del cliente.
     const saldo = total - pagado
     if (input.clienteId && saldo > 0.0001) {
-      run('UPDATE clientes SET saldo_cta_cte = saldo_cta_cte + ? WHERE id = ?', [saldo, input.clienteId])
+      await run('UPDATE clientes SET saldo_cta_cte = saldo_cta_cte + $1 WHERE id = $2', [saldo, input.clienteId])
     }
 
     return { ventaId, total }
   })
 }
 
-export function listarVentas(limit = 50) {
-  return all(
-    `SELECT v.*, c.nombre AS cliente_nombre
+export async function listarVentas(limit = 50) {
+  return query(
+    `SELECT v.id, v.fecha::TEXT AS fecha, v.lista, v.total, c.nombre AS cliente_nombre
      FROM ventas v LEFT JOIN clientes c ON c.id = v.cliente_id
-     ORDER BY v.id DESC LIMIT ?`,
+     ORDER BY v.id DESC LIMIT $1`,
     [limit]
   )
 }
 
-export function detalleVenta(id: number) {
-  const venta = get<{
+export async function detalleVenta(id: number) {
+  const venta = await queryOne<{
     id: number; fecha: string; lista: string; total: number; cliente_nombre: string | null
   }>(
-    `SELECT v.*, c.nombre AS cliente_nombre
+    `SELECT v.id, v.fecha::TEXT AS fecha, v.lista, v.total, c.nombre AS cliente_nombre
      FROM ventas v LEFT JOIN clientes c ON c.id = v.cliente_id
-     WHERE v.id = ?`,
+     WHERE v.id = $1`,
     [id]
   )
   if (!venta) return null
-  const items = all<{ nombre: string; cantidad: number; precio_unit: number }>(
+  const items = await query<{ nombre: string; cantidad: number; precio_unit: number }>(
     `SELECT vi.cantidad, vi.precio_unit, a.nombre
      FROM venta_items vi JOIN articulos a ON a.id = vi.articulo_id
-     WHERE vi.venta_id = ?`,
+     WHERE vi.venta_id = $1`,
     [id]
   )
   return { ...venta, items }

@@ -2,8 +2,8 @@ import { app, shell, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { initDb } from './db'
+import { getConfig } from './config'
 import { registerIpc } from './ipc'
-import { hacerBackup } from './services/backup'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -42,9 +42,18 @@ app.whenReady().then(async () => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  await initDb()
   registerIpc()
-  hacerBackup()
+
+  // Auto-conectar si ya hay config guardada
+  const config = getConfig()
+  if (config) {
+    try {
+      await initDb(config.databaseUrl)
+    } catch {
+      // El renderer mostrará el error via app:dbStatus
+    }
+  }
+
   createWindow()
 
   app.on('activate', () => {

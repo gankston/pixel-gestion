@@ -1,6 +1,6 @@
-import { all, get, run, lastId } from '../db'
+import { query, queryOne, run, insert } from '../db'
 
-export type MedioPago = 'efectivo' | 'transferencia' | 'credito' | 'debito'
+export type MedioPago = 'efectivo' | 'transferencia' | 'credito' | 'debito' | 'cheque'
 
 export interface CajaRow {
   id: number
@@ -12,28 +12,27 @@ export interface CajaRow {
   cerrada_en: string | null
 }
 
-const hoy = (): string => new Date().toLocaleDateString('en-CA') // YYYY-MM-DD local
+const hoy = (): string => new Date().toLocaleDateString('en-CA') // YYYY-MM-DD
 
-export function cajaAbierta(): CajaRow | undefined {
-  return get<CajaRow>("SELECT * FROM caja_diaria WHERE estado = 'abierta' ORDER BY id DESC LIMIT 1")
+export async function cajaAbierta(): Promise<CajaRow | null> {
+  return queryOne<CajaRow>("SELECT * FROM caja_diaria WHERE estado = 'abierta' ORDER BY id DESC LIMIT 1")
 }
 
-export function abrirCaja(saldoInicial = 0): CajaRow {
-  if (cajaAbierta()) return cajaAbierta()!
-  run('INSERT INTO caja_diaria (fecha, estado, saldo_inicial) VALUES (?, ?, ?)', [
-    hoy(),
-    'abierta',
-    saldoInicial
-  ])
-  return get<CajaRow>('SELECT * FROM caja_diaria WHERE id = ?', [lastId()])!
+export async function abrirCaja(saldoInicial = 0): Promise<CajaRow> {
+  const existente = await cajaAbierta()
+  if (existente) return existente
+  const id = await insert(
+    'INSERT INTO caja_diaria (fecha, estado, saldo_inicial) VALUES ($1,$2,$3)',
+    [hoy(), 'abierta', saldoInicial]
+  )
+  return (await queryOne<CajaRow>('SELECT * FROM caja_diaria WHERE id = $1', [id]))!
 }
 
-/** Garantiza que haya una caja abierta (la abre con saldo 0 si no existe). */
-export function asegurarCajaAbierta(): CajaRow {
-  return cajaAbierta() ?? abrirCaja(0)
+export async function asegurarCajaAbierta(): Promise<CajaRow> {
+  return (await cajaAbierta()) ?? abrirCaja(0)
 }
 
-export function registrarMovimientoCaja(
+export async function registrarMovimientoCaja(
   cajaId: number,
   tipo: 'ingreso' | 'egreso',
   medio: MedioPago,
@@ -41,10 +40,10 @@ export function registrarMovimientoCaja(
   referenciaTipo?: string,
   referenciaId?: number,
   descripcion?: string
-): void {
-  run(
+): Promise<void> {
+  await run(
     `INSERT INTO caja_movimientos (caja_id, tipo, medio_pago, monto, referencia_tipo, referencia_id, descripcion)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+     VALUES ($1,$2,$3,$4,$5,$6,$7)`,
     [cajaId, tipo, medio, monto, referenciaTipo ?? null, referenciaId ?? null, descripcion ?? null]
   )
 }
@@ -54,43 +53,44 @@ export interface ResumenCaja {
   transferencia: number
   credito: number
   debito: number
+  cheque: number
   total: number
 }
 
-/** Totales netos (ingresos - egresos) por medio de pago para una caja. */
-export function resumenCaja(cajaId: number): ResumenCaja {
-  const fila = (medio: MedioPago): number => {
-    const r = get<{ t: number }>(
+export async function resumenCaja(cajaId: number): Promise<ResumenCaja> {
+  const fila = async (medio: MedioPago): Promise<number> => {
+    const r = await queryOne<{ t: number }>(
       `SELECT COALESCE(SUM(CASE WHEN tipo='ingreso' THEN monto ELSE -monto END), 0) AS t
-       FROM caja_movimientos WHERE caja_id = ? AND medio_pago = ?`,
+       FROM caja_movimientos WHERE caja_id = $1 AND medio_pago = $2`,
       [cajaId, medio]
     )
     return r?.t ?? 0
   }
-  const efectivo = fila('efectivo')
-  const transferencia = fila('transferencia')
-  const credito = fila('credito')
-  const debito = fila('debito')
-  return { efectivo, transferencia, credito, debito, total: efectivo + transferencia + credito + debito }
+  const efectivo = await fila('efectivo')
+  const transferencia = await fila('transferencia')
+  const credito = await fila('credito')
+  const debito = await fila('debito')
+  const cheque = await fila('cheque')
+  return { efectivo, transferencia, credito, debito, cheque, total: efectivo + transferencia + credito + debito + cheque }
 }
 
-export function movimientosCaja(cajaId: number) {
-  return all(
-    'SELECT * FROM caja_movimientos WHERE caja_id = ? ORDER BY id DESC',
-    [cajaId]
-  )
+export async function movimientosCaja(cajaId: number) {
+  return query('SELECT * FROM caja_movimientos WHERE caja_id = $1 ORDER BY id DESC', [cajaId])
 }
 
-export function cerrarCaja(cajaId: number, saldoFinal: number): void {
-  run(
-    "UPDATE caja_diaria SET estado = 'cerrada', saldo_final = ?, cerrada_en = datetime('now','localtime') WHERE id = ?",
+export async function cerrarCaja(cajaId: number, saldoFinal: number): Promise<void> {
+  await run(
+    "UPDATE caja_diaria SET estado = 'cerrada', saldo_final = $1, cerrada_en = NOW() WHERE id = $2",
     [saldoFinal, cajaId]
   )
 }
 
-/** Estado de caja para la pantalla: caja abierta + su resumen, o null. */
-export function estadoCaja() {
-  const caja = cajaAbierta()
+export async function estadoCaja() {
+  const caja = await cajaAbierta()
   if (!caja) return { caja: null, resumen: null, movimientos: [] }
-  return { caja, resumen: resumenCaja(caja.id), movimientos: movimientosCaja(caja.id) }
+  const [resumen, movimientos] = await Promise.all([
+    resumenCaja(caja.id),
+    movimientosCaja(caja.id)
+  ])
+  return { caja, resumen, movimientos }
 }

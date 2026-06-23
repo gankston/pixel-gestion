@@ -1,32 +1,32 @@
-import { all, get } from '../db'
+import { query, queryOne } from '../db'
 
-export function ventasPorDia(dias = 30) {
-  return all<{ dia: string; cantidad: number; monto: number }>(`
-    SELECT substr(fecha, 1, 10) AS dia,
-           COUNT(*) AS cantidad,
-           CAST(SUM(total) AS INTEGER) AS monto
+export async function ventasPorDia(dias = 30) {
+  return query<{ dia: string; cantidad: number; monto: number }>(`
+    SELECT fecha::DATE::TEXT AS dia,
+           COUNT(*)::int AS cantidad,
+           COALESCE(SUM(total), 0)::int AS monto
     FROM ventas
-    WHERE fecha >= datetime('now', '-${dias} days', 'localtime')
-    GROUP BY substr(fecha, 1, 10)
+    WHERE fecha >= NOW() - ($1 || ' days')::INTERVAL
+    GROUP BY fecha::DATE
     ORDER BY dia DESC
-  `)
+  `, [dias])
 }
 
-export function productosTopVentas(limite = 10) {
-  return all<{ nombre: string; unidades: number; monto: number }>(`
+export async function productosTopVentas(limite = 10) {
+  return query<{ nombre: string; unidades: number; monto: number }>(`
     SELECT a.nombre,
-           CAST(SUM(vi.cantidad) AS INTEGER) AS unidades,
-           CAST(SUM(vi.cantidad * vi.precio_unit) AS INTEGER) AS monto
+           SUM(vi.cantidad)::int AS unidades,
+           SUM(vi.cantidad * vi.precio_unit)::int AS monto
     FROM venta_items vi
     JOIN articulos a ON a.id = vi.articulo_id
-    GROUP BY vi.articulo_id
+    GROUP BY vi.articulo_id, a.nombre
     ORDER BY unidades DESC
-    LIMIT ?
+    LIMIT $1
   `, [limite])
 }
 
-export function stockBajoMinimo() {
-  return all<{
+export async function stockBajoMinimo() {
+  return query<{
     nombre: string
     codigo_barras: string | null
     stock_fisico: number
@@ -43,20 +43,22 @@ export function stockBajoMinimo() {
   `)
 }
 
-export function resumenMes() {
+export async function resumenMes() {
   const ahora = new Date()
-  const inicioMes = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-01 00:00:00`
-  const hoyStr = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}`
+  const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1).toISOString()
 
-  const mes = get<{ cantidad: number; monto: number }>(`
-    SELECT COUNT(*) AS cantidad, COALESCE(CAST(SUM(total) AS INTEGER), 0) AS monto
-    FROM ventas WHERE substr(fecha, 1, 10) >= ?
+  const mes = await queryOne<{ cantidad: number; monto: number }>(`
+    SELECT COUNT(*)::int AS cantidad, COALESCE(SUM(total), 0)::int AS monto
+    FROM ventas WHERE fecha >= $1
   `, [inicioMes]) ?? { cantidad: 0, monto: 0 }
 
-  const hoy = get<{ cantidad: number; monto: number }>(`
-    SELECT COUNT(*) AS cantidad, COALESCE(CAST(SUM(total) AS INTEGER), 0) AS monto
-    FROM ventas WHERE substr(fecha, 1, 10) = ?
-  `, [hoyStr]) ?? { cantidad: 0, monto: 0 }
+  const hoyStart = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate()).toISOString()
+  const manana = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + 1).toISOString()
+
+  const hoy = await queryOne<{ cantidad: number; monto: number }>(`
+    SELECT COUNT(*)::int AS cantidad, COALESCE(SUM(total), 0)::int AS monto
+    FROM ventas WHERE fecha >= $1 AND fecha < $2
+  `, [hoyStart, manana]) ?? { cantidad: 0, monto: 0 }
 
   return { mes, hoy }
 }

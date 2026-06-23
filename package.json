@@ -1,6 +1,6 @@
 {
   "name": "pixel-gestion",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "PIXEL GESTION - Sistema de ventas y stock",
   "main": "./out/main/index.js",
   "author": "Gaston",
@@ -18,11 +18,15 @@
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^3.0.0",
     "@fontsource/plus-jakarta-sans": "^5.2.8",
+    "bcryptjs": "^3.0.3",
     "lucide-react": "^1.18.0",
+    "pg": "^8.22.0",
     "sql.js": "^1.13.0"
   },
   "devDependencies": {
     "@electron-toolkit/tsconfig": "^1.0.1",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/pg": "^8.20.0",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@types/sql.js": "^1.4.9",

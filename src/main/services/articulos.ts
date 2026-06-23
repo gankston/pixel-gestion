@@ -1,4 +1,4 @@
-import { all, get, run, lastId } from '../db'
+import { query, queryOne, run, insert } from '../db'
 import { calcularPrecios } from './precios'
 
 export interface ArticuloRow {
@@ -46,30 +46,30 @@ function conPrecios(r: ArticuloRow) {
   }
 }
 
-export function listarArticulos(filtro = '') {
+export async function listarArticulos(filtro = '') {
   const f = `%${filtro.trim()}%`
   const rows = filtro
-    ? all<ArticuloRow>(
-        'SELECT * FROM articulos WHERE activo = 1 AND (nombre LIKE ? OR codigo_barras LIKE ? OR rubro LIKE ?) ORDER BY nombre',
+    ? await query<ArticuloRow>(
+        'SELECT * FROM articulos WHERE activo = 1 AND (nombre ILIKE $1 OR codigo_barras ILIKE $2 OR rubro ILIKE $3) ORDER BY nombre',
         [f, f, f]
       )
-    : all<ArticuloRow>('SELECT * FROM articulos WHERE activo = 1 ORDER BY nombre')
+    : await query<ArticuloRow>('SELECT * FROM articulos WHERE activo = 1 ORDER BY nombre')
   return rows.map(conPrecios)
 }
 
-export function buscarPorCodigo(codigo: string) {
-  const r = get<ArticuloRow>(
-    'SELECT * FROM articulos WHERE activo = 1 AND codigo_barras = ?',
+export async function buscarPorCodigo(codigo: string) {
+  const r = await queryOne<ArticuloRow>(
+    'SELECT * FROM articulos WHERE activo = 1 AND codigo_barras = $1',
     [codigo.trim()]
   )
   return r ? conPrecios(r) : null
 }
 
-export function crearArticulo(data: ArticuloInput): number {
-  run(
+export async function crearArticulo(data: ArticuloInput): Promise<number> {
+  return insert(
     `INSERT INTO articulos
        (codigo_barras, nombre, rubro, neto, descuento_pct, markup_mayorista_pct, markup_consumidor_pct, en_oferta, precio_oferta, stock_fisico, stock_minimo)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
     [
       data.codigo_barras || null,
       data.nombre,
@@ -84,15 +84,14 @@ export function crearArticulo(data: ArticuloInput): number {
       data.stock_minimo ?? 0
     ]
   )
-  return lastId()
 }
 
-export function actualizarArticulo(id: number, data: ArticuloInput): void {
-  run(
+export async function actualizarArticulo(id: number, data: ArticuloInput): Promise<void> {
+  await run(
     `UPDATE articulos SET
-       codigo_barras = ?, nombre = ?, rubro = ?, neto = ?, descuento_pct = ?,
-       markup_mayorista_pct = ?, markup_consumidor_pct = ?, en_oferta = ?, precio_oferta = ?, stock_minimo = ?
-     WHERE id = ?`,
+       codigo_barras=$1, nombre=$2, rubro=$3, neto=$4, descuento_pct=$5,
+       markup_mayorista_pct=$6, markup_consumidor_pct=$7, en_oferta=$8, precio_oferta=$9, stock_minimo=$10
+     WHERE id=$11`,
     [
       data.codigo_barras || null,
       data.nombre,
@@ -109,6 +108,6 @@ export function actualizarArticulo(id: number, data: ArticuloInput): void {
   )
 }
 
-export function eliminarArticulo(id: number): void {
-  run('UPDATE articulos SET activo = 0 WHERE id = ?', [id])
+export async function eliminarArticulo(id: number): Promise<void> {
+  await run('UPDATE articulos SET activo = 0 WHERE id = $1', [id])
 }

@@ -1,4 +1,4 @@
-import { all, run, lastId, tx } from '../db'
+import { query, queryOne, run, insert, tx } from '../db'
 import { asegurarCajaAbierta, registrarMovimientoCaja, type MedioPago } from './caja'
 
 export interface ClienteInput {
@@ -9,32 +9,42 @@ export interface ClienteInput {
   email?: string | null
 }
 
-export function listarClientes() {
-  return all('SELECT * FROM clientes WHERE activo = 1 ORDER BY nombre')
+export async function listarClientes() {
+  return query('SELECT * FROM clientes WHERE activo = 1 ORDER BY nombre')
 }
 
-export function crearCliente(data: ClienteInput): number {
-  run(
-    'INSERT INTO clientes (nombre, tipo, documento, telefono, email) VALUES (?, ?, ?, ?, ?)',
+export async function listarClientesConDeuda() {
+  return query(
+    'SELECT * FROM clientes WHERE activo = 1 AND saldo_cta_cte > 0 ORDER BY saldo_cta_cte DESC'
+  )
+}
+
+export async function crearCliente(data: ClienteInput): Promise<number> {
+  return insert(
+    'INSERT INTO clientes (nombre, tipo, documento, telefono, email) VALUES ($1,$2,$3,$4,$5)',
     [data.nombre, data.tipo, data.documento || null, data.telefono || null, data.email || null]
   )
-  return lastId()
 }
 
-export function actualizarCliente(id: number, data: ClienteInput): void {
-  run('UPDATE clientes SET nombre = ?, tipo = ?, documento = ?, telefono = ?, email = ? WHERE id = ?', [
-    data.nombre,
-    data.tipo,
-    data.documento || null,
-    data.telefono || null,
-    data.email || null,
-    id
-  ])
+export async function actualizarCliente(id: number, data: ClienteInput): Promise<void> {
+  await run(
+    'UPDATE clientes SET nombre=$1, tipo=$2, documento=$3, telefono=$4, email=$5 WHERE id=$6',
+    [data.nombre, data.tipo, data.documento || null, data.telefono || null, data.email || null, id]
+  )
 }
 
-/** Ventas del cliente (para mostrar e imputar pagos). */
-export function ventasCliente(clienteId: number) {
-  return all('SELECT id, fecha, total FROM ventas WHERE cliente_id = ? ORDER BY id DESC', [clienteId])
+export async function ventasCliente(clienteId: number) {
+  return query(
+    'SELECT id, fecha::TEXT AS fecha, total FROM ventas WHERE cliente_id = $1 ORDER BY id DESC',
+    [clienteId]
+  )
+}
+
+export async function historialPagos(clienteId: number) {
+  return query(
+    'SELECT id, fecha::TEXT AS fecha, medio_pago, monto FROM pagos WHERE cliente_id = $1 ORDER BY id DESC LIMIT 20',
+    [clienteId]
+  )
 }
 
 export interface ImputacionInput {
@@ -48,31 +58,43 @@ export interface PagoInput {
   imputaciones?: ImputacionInput[]
 }
 
-/** Registra un pago del cliente: baja su saldo, lo imputa a comprobantes e ingresa a caja. */
-export function registrarPago(input: PagoInput): number {
-  return tx(() => {
-    const caja = asegurarCajaAbierta()
-    run('INSERT INTO pagos (cliente_id, medio_pago, monto) VALUES (?, ?, ?)', [
-      input.clienteId,
-      input.medio,
-      input.monto
-    ])
-    const pagoId = lastId()
+export async function registrarPago(input: PagoInput): Promise<number> {
+  return tx(async () => {
+    const caja = await asegurarCajaAbierta()
+    const pagoId = await insert(
+      'INSERT INTO pagos (cliente_id, medio_pago, monto) VALUES ($1,$2,$3)',
+      [input.clienteId, input.medio, input.monto]
+    )
 
     for (const im of input.imputaciones ?? []) {
       if (im.monto <= 0) continue
-      run('INSERT INTO imputaciones (pago_id, venta_id, monto) VALUES (?, ?, ?)', [
-        pagoId,
-        im.ventaId,
-        im.monto
-      ])
+      await insert(
+        'INSERT INTO imputaciones (pago_id, venta_id, monto) VALUES ($1,$2,$3)',
+        [pagoId, im.ventaId, im.monto]
+      )
     }
 
-    run('UPDATE clientes SET saldo_cta_cte = saldo_cta_cte - ? WHERE id = ?', [
+    await run('UPDATE clientes SET saldo_cta_cte = saldo_cta_cte - $1 WHERE id = $2', [
       input.monto,
       input.clienteId
     ])
-    registrarMovimientoCaja(caja.id, 'ingreso', input.medio, input.monto, 'pago', pagoId, 'Pago cta cte')
+    await registrarMovimientoCaja(
+      caja.id,
+      'ingreso',
+      input.medio,
+      input.monto,
+      'pago',
+      pagoId,
+      'Pago cta cte'
+    )
     return pagoId
   })
+}
+
+export async function saldoCliente(clienteId: number): Promise<number> {
+  const r = await queryOne<{ saldo: number }>(
+    'SELECT saldo_cta_cte AS saldo FROM clientes WHERE id = $1',
+    [clienteId]
+  )
+  return r?.saldo ?? 0
 }
