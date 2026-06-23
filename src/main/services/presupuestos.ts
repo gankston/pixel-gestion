@@ -68,7 +68,7 @@ export async function crearPresupuesto(input: PresupuestoInput): Promise<number>
 
 async function expirarPresupuestosVencidos(): Promise<void> {
   const vencidos = await query<{ id: number }>(
-    `SELECT id FROM presupuestos WHERE estado = 'vigente' AND vencimiento < NOW()`
+    `SELECT id FROM presupuestos WHERE estado = 'vigente' AND vencimiento < CURRENT_DATE`
   )
   for (const p of vencidos) {
     await anularPresupuesto(p.id)

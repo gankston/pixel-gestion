@@ -481,9 +481,14 @@ export default function Proveedores(): JSX.Element {
                 Factura #{modalPago.factura.id} — Saldo: <span className="font-semibold text-danger">{money(modalPago.factura.saldo)}</span>
               </p>
             )}
-            <p className="col-span-2 text-[12px] text-muted">
-              Saldo proveedor: <span className="font-semibold text-danger">{money(modalPago.prov.saldo_cta_cte)}</span>
-            </p>
+            <div className="col-span-2 space-y-1">
+              <p className="text-[12px] text-muted">
+                Saldo proveedor: <span className="font-semibold text-danger">{money(modalPago.prov.saldo_cta_cte)}</span>
+              </p>
+              {Number(montoPago) > modalPago.prov.saldo_cta_cte + 0.01 && (
+                <p className="text-[12px] text-danger">El monto supera el saldo del proveedor.</p>
+              )}
+            </div>
           </div>
         )}
       </Modal>
