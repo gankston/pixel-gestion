@@ -42,6 +42,7 @@ export default function Articulos(): JSX.Element {
   const [articulos, setArticulos] = useState<ArticuloConPrecios[]>([])
   const [filtro, setFiltro] = useState('')
   const [form, setForm] = useState<Form | null>(null)
+  const [errorEliminar, setErrorEliminar] = useState<string | null>(null)
 
   function recargar(): void {
     window.api.listArticulos(filtro).then(setArticulos)
@@ -80,8 +81,12 @@ export default function Articulos(): JSX.Element {
 
   async function eliminar(a: ArticuloConPrecios): Promise<void> {
     if (!confirm(`Eliminar "${a.nombre}"?`)) return
-    await window.api.eliminarArticulo(a.id)
-    recargar()
+    try {
+      await window.api.eliminarArticulo(a.id)
+      recargar()
+    } catch (e) {
+      setErrorEliminar(e instanceof Error ? e.message : 'No se pudo eliminar el artículo')
+    }
   }
 
   const set = (campo: keyof Form, valor: unknown): void =>
@@ -97,6 +102,13 @@ export default function Articulos(): JSX.Element {
         </Button>
       }
     >
+      {errorEliminar && (
+        <div className="mb-3 flex items-center justify-between rounded border border-danger/30 bg-danger/8 px-4 py-2.5 text-[13px] text-danger">
+          <span>{errorEliminar}</span>
+          <button onClick={() => setErrorEliminar(null)} className="ml-3 text-danger/60 hover:text-danger">✕</button>
+        </div>
+      )}
+
       <div className="mb-4 max-w-sm">
         <TextInput
           placeholder="Buscar por nombre, código o rubro..."
@@ -202,6 +214,9 @@ export default function Articulos(): JSX.Element {
             </Field>
             <Field label="Neto ($)">
               <TextInput type="number" value={form.neto} onChange={(e) => set('neto', Number(e.target.value))} />
+              {form.neto === 0 && (
+                <p className="mt-1 text-[11px] text-warn">Neto $0 — los precios de venta serán $0.</p>
+              )}
             </Field>
             <Field label="Descuento (%)">
               <TextInput type="number" value={form.descuento_pct} onChange={(e) => set('descuento_pct', Number(e.target.value))} />

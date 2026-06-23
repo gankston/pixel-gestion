@@ -55,6 +55,7 @@ export default function Presupuestos(): JSX.Element {
     setListaPrecio('consumidor')
     setCarrito([])
     setBusqueda('')
+    setError('')
     setModal(true)
   }
   function agregar(a: ArticuloConPrecios): void {

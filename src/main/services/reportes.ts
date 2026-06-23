@@ -13,16 +13,19 @@ export async function ventasPorDia(dias = 30) {
 }
 
 export async function productosTopVentas(limite = 10) {
+  const inicioMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
   return query<{ nombre: string; unidades: number; monto: number }>(`
     SELECT a.nombre,
            SUM(vi.cantidad)::int AS unidades,
            SUM(vi.cantidad * vi.precio_unit)::int AS monto
     FROM venta_items vi
     JOIN articulos a ON a.id = vi.articulo_id
+    JOIN ventas v ON v.id = vi.venta_id
+    WHERE v.fecha >= $2
     GROUP BY vi.articulo_id, a.nombre
     ORDER BY unidades DESC
     LIMIT $1
-  `, [limite])
+  `, [limite, inicioMes])
 }
 
 export async function stockBajoMinimo() {

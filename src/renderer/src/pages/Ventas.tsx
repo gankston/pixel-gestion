@@ -123,14 +123,23 @@ export default function Ventas(): JSX.Element {
     }
 
     if (!fiar && medio === 'cheque') {
-      await window.api.registrarCheque({
-        numero: chequeForm.numero.trim() || null,
-        banco: chequeForm.banco.trim() || null,
-        monto: total,
-        fechaCobro: chequeForm.fechaCobro,
-        origenTipo: 'venta',
-        origenId: r.ventaId
-      })
+      try {
+        await window.api.registrarCheque({
+          numero: chequeForm.numero.trim() || null,
+          banco: chequeForm.banco.trim() || null,
+          monto: total,
+          fechaCobro: chequeForm.fechaCobro,
+          origenTipo: 'venta',
+          origenId: r.ventaId
+        })
+      } catch {
+        setCarrito([])
+        setUltimaVentaId(r.ventaId)
+        setChequeForm(FORM_CHEQUE_VACIO)
+        setMensaje(`Venta #${r.ventaId} registrada, pero el cheque no se pudo guardar. Registralo manualmente en la sección Cheques.`)
+        setMensajeError(true)
+        return
+      }
       setChequeForm(FORM_CHEQUE_VACIO)
     }
 

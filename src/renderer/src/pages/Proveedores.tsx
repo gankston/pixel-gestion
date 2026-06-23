@@ -37,6 +37,7 @@ export default function Proveedores(): JSX.Element {
   const [pagando, setPagando] = useState(false)
   const [chequesCartera, setChequesCartera] = useState<ChequeCartera[]>([])
   const [chequeId, setChequeId] = useState<number | null>(null)
+  const [errorPago, setErrorPago] = useState<string | null>(null)
 
   function recargar(): void {
     window.api.listProveedores(filtro).then(setProveedores)
@@ -124,6 +125,7 @@ export default function Proveedores(): JSX.Element {
     const monto = Number(montoPago)
     if (monto <= 0) return
     if (medioPago === 'cheque' && !chequeId) return
+    setErrorPago(null)
     setPagando(true)
     try {
       await window.api.pagarProveedor({
@@ -140,6 +142,8 @@ export default function Proveedores(): JSX.Element {
       setChequesCartera([])
       setFacturasMap({})
       recargar()
+    } catch (e) {
+      setErrorPago(e instanceof Error ? e.message : 'No se pudo registrar el pago')
     } finally {
       setPagando(false)
     }
@@ -369,7 +373,7 @@ export default function Proveedores(): JSX.Element {
       <Modal
         open={!!modalPago}
         title={`Pagar a ${modalPago?.prov.nombre}`}
-        onClose={() => { setModalPago(null); setChequesCartera([]); setChequeId(null) }}
+        onClose={() => { setModalPago(null); setChequesCartera([]); setChequeId(null); setErrorPago(null) }}
         footer={
           <>
             <Button variant="secondary" onClick={() => setModalPago(null)}>Cancelar</Button>
@@ -379,6 +383,12 @@ export default function Proveedores(): JSX.Element {
           </>
         }
       >
+        {errorPago && (
+          <div className="mb-3 flex items-center justify-between rounded border border-danger/30 bg-danger/8 px-3 py-2 text-[12px] text-danger">
+            <span>{errorPago}</span>
+            <button onClick={() => setErrorPago(null)} className="ml-3 text-danger/60 hover:text-danger">✕</button>
+          </div>
+        )}
         {modalPago && (
           <div className="grid grid-cols-2 gap-3">
             <Field label="Medio de pago">

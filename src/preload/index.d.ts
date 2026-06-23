@@ -227,7 +227,7 @@ export interface Api {
   actualizarProveedor: (id: number, data: unknown) => Promise<void>
   eliminarProveedor: (id: number) => Promise<void>
   facturasProveedor: (provId: number) => Promise<FacturaProveedor[]>
-  cargarFacturaProveedor: (provId: number, total: number) => Promise<void>
+  cargarFacturaProveedor: (provId: number, total: number, numero?: string) => Promise<void>
   pagarProveedor: (data: unknown) => Promise<number>
   pagosProveedor: (provId: number) => Promise<unknown[]>
 

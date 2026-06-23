@@ -119,5 +119,9 @@ export async function actualizarArticulo(id: number, data: ArticuloInput): Promi
 }
 
 export async function eliminarArticulo(id: number): Promise<void> {
+  const art = await queryOne<{ stock_reservado: number }>('SELECT stock_reservado FROM articulos WHERE id = $1', [id])
+  if (art && art.stock_reservado > 0) {
+    throw new Error('No se puede eliminar: el artículo tiene stock reservado en presupuestos vigentes')
+  }
   await run('UPDATE articulos SET activo = 0 WHERE id = $1', [id])
 }

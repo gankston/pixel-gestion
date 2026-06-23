@@ -36,6 +36,7 @@ export default function Caja(): JSX.Element {
   const [modalAbrir, setModalAbrir] = useState(false)
   const [saldoInicial, setSaldoInicial] = useState('0')
   const [abriendo, setAbriendo] = useState(false)
+  const [errorCierre, setErrorCierre] = useState<string | null>(null)
 
   function recargar(): void {
     window.api.estadoCaja().then(setEstado)
@@ -57,8 +58,12 @@ export default function Caja(): JSX.Element {
   async function cerrar(): Promise<void> {
     if (!estado?.caja || !estado.resumen) return
     if (!confirm('Cerrar la caja del día?')) return
-    await window.api.cerrarCaja(estado.caja.id, estado.resumen.total + estado.caja.saldo_inicial)
-    recargar()
+    try {
+      await window.api.cerrarCaja(estado.caja.id, estado.resumen.total + estado.caja.saldo_inicial)
+      recargar()
+    } catch (e) {
+      setErrorCierre(e instanceof Error ? e.message : 'No se pudo cerrar la caja')
+    }
   }
 
   if (!estado) return <Page titulo="Caja diaria">Cargando...</Page>
@@ -122,6 +127,13 @@ export default function Caja(): JSX.Element {
         </>
       }
     >
+      {errorCierre && (
+        <div className="mb-3 flex items-center justify-between rounded border border-danger/30 bg-danger/8 px-4 py-2.5 text-[13px] text-danger">
+          <span>{errorCierre}</span>
+          <button onClick={() => setErrorCierre(null)} className="ml-3 text-danger/60 hover:text-danger">✕</button>
+        </div>
+      )}
+
       <div className="mb-6 grid grid-cols-5 gap-3">
         <KpiCard label="Efectivo" valor={resumen.efectivo} />
         <KpiCard label="Transferencia" valor={resumen.transferencia} />
