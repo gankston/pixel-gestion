@@ -36,7 +36,8 @@ export default function Login({ onLogin }: Props): JSX.Element {
       const usuario = await window.api.login(seleccionado.nombre, password)
       onLogin(usuario)
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Contraseña incorrecta')
+      const raw = e instanceof Error ? e.message : 'Contraseña incorrecta'
+      setError(raw.replace(/^Error invoking remote method '[^']+': Error: /, ''))
     } finally {
       setCargando(false)
     }

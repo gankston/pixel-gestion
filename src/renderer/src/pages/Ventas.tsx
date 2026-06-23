@@ -1,23 +1,32 @@
 import { useEffect, useRef, useState } from 'react'
 import { FileText, Printer, Minus, Plus, Scan, UserCircle, CheckCircle2 } from 'lucide-react'
 import Page from '../components/Page'
-import { Button, TextInput, Badge } from '../components/ui'
+import { Button, TextInput, Field, Badge } from '../components/ui'
 import { money } from '../lib/format'
 import { imprimirVenta, verPdfVenta } from '../lib/print'
 import type { ArticuloConPrecios, Cliente } from '../../../preload'
 
 type Lista = 'mayorista' | 'consumidor'
-type Medio = 'efectivo' | 'transferencia' | 'debito' | 'credito'
+type Medio = 'efectivo' | 'transferencia' | 'debito' | 'credito' | 'cheque'
 interface ItemCarrito {
   art: ArticuloConPrecios
   cantidad: number
 }
 
+interface ChequeForm {
+  numero: string
+  banco: string
+  fechaCobro: string
+}
+
+const FORM_CHEQUE_VACIO: ChequeForm = { numero: '', banco: '', fechaCobro: '' }
+
 const MEDIOS: { id: Medio; label: string }[] = [
   { id: 'efectivo', label: 'Efectivo' },
   { id: 'transferencia', label: 'Transfer.' },
   { id: 'debito', label: 'Débito' },
-  { id: 'credito', label: 'Crédito' }
+  { id: 'credito', label: 'Crédito' },
+  { id: 'cheque', label: 'Cheque' }
 ]
 
 function precioDe(art: ArticuloConPrecios, lista: Lista): number {
@@ -33,6 +42,7 @@ export default function Ventas(): JSX.Element {
   const [busqueda, setBusqueda] = useState('')
   const [resultados, setResultados] = useState<ArticuloConPrecios[]>([])
   const [medio, setMedio] = useState<Medio>('efectivo')
+  const [chequeForm, setChequeForm] = useState<ChequeForm>(FORM_CHEQUE_VACIO)
   const [mensaje, setMensaje] = useState('')
   const [ultimaVentaId, setUltimaVentaId] = useState<number | null>(null)
   const scanRef = useRef<HTMLInputElement>(null)
@@ -89,8 +99,9 @@ export default function Ventas(): JSX.Element {
 
   async function cobrar(fiar: boolean): Promise<void> {
     if (carrito.length === 0) return
-    if (fiar && !clienteId) {
-      setMensaje('Para fiar tenes que elegir un cliente.')
+    if (fiar && !clienteId) return
+    if (medio === 'cheque' && !chequeForm.fechaCobro) {
+      setMensaje('Para pagar con cheque tenés que completar la fecha de cobro.')
       return
     }
     const items = carrito.map((it) => ({
@@ -100,6 +111,19 @@ export default function Ventas(): JSX.Element {
     }))
     const pagos = fiar ? [] : [{ medio, monto: total }]
     const r = await window.api.crearVenta({ clienteId, lista, items, pagos })
+
+    if (!fiar && medio === 'cheque') {
+      await window.api.registrarCheque({
+        numero: chequeForm.numero.trim() || null,
+        banco: chequeForm.banco.trim() || null,
+        monto: total,
+        fechaCobro: chequeForm.fechaCobro,
+        origenTipo: 'venta',
+        origenId: r.ventaId
+      })
+      setChequeForm(FORM_CHEQUE_VACIO)
+    }
+
     setCarrito([])
     setUltimaVentaId(r.ventaId)
     setMensaje(
@@ -269,11 +293,11 @@ export default function Ventas(): JSX.Element {
             </div>
 
             {/* Medios de pago */}
-            <div className="mb-3 grid grid-cols-4 gap-1">
+            <div className="mb-2 grid grid-cols-5 gap-1">
               {MEDIOS.map((m) => (
                 <button
                   key={m.id}
-                  onClick={() => setMedio(m.id)}
+                  onClick={() => { setMedio(m.id); setChequeForm(FORM_CHEQUE_VACIO) }}
                   className={
                     'rounded py-1.5 text-[11px] font-semibold transition-colors ' +
                     (medio === m.id
@@ -286,30 +310,66 @@ export default function Ventas(): JSX.Element {
               ))}
             </div>
 
+            {/* Datos del cheque — solo cuando está seleccionado */}
+            {medio === 'cheque' && (
+              <div className="mb-3 grid grid-cols-2 gap-2 rounded border border-line bg-app p-2.5">
+                <Field label="N° Cheque">
+                  <input
+                    type="text"
+                    value={chequeForm.numero}
+                    onChange={(e) => setChequeForm((f) => ({ ...f, numero: e.target.value }))}
+                    placeholder="Opcional"
+                    className="w-full rounded border border-line bg-panel px-2.5 py-1.5 text-[12px] text-ink outline-none focus:border-primary"
+                  />
+                </Field>
+                <Field label="Banco">
+                  <input
+                    type="text"
+                    value={chequeForm.banco}
+                    onChange={(e) => setChequeForm((f) => ({ ...f, banco: e.target.value }))}
+                    placeholder="Opcional"
+                    className="w-full rounded border border-line bg-panel px-2.5 py-1.5 text-[12px] text-ink outline-none focus:border-primary"
+                  />
+                </Field>
+                <Field label="Fecha de cobro" className="col-span-2">
+                  <input
+                    type="date"
+                    value={chequeForm.fechaCobro}
+                    onChange={(e) => setChequeForm((f) => ({ ...f, fechaCobro: e.target.value }))}
+                    className="w-full rounded border border-line bg-panel px-2.5 py-1.5 text-[12px] text-ink outline-none focus:border-primary"
+                  />
+                </Field>
+              </div>
+            )}
+
             <div className="flex gap-2">
               <Button
                 className="flex-1"
-                disabled={carrito.length === 0}
+                disabled={carrito.length === 0 || (medio === 'cheque' && !chequeForm.fechaCobro)}
                 onClick={() => cobrar(false)}
               >
                 Cobrar {total > 0 && money(total)}
               </Button>
               <Button
                 variant="secondary"
-                disabled={carrito.length === 0}
+                disabled={carrito.length === 0 || !clienteId}
                 onClick={() => cobrar(true)}
-                title="Cargar a cuenta corriente"
+                title={clienteId ? 'Cargar a cuenta corriente' : 'Seleccioná un cliente primero'}
               >
-                Fiar
+                Cta. Cte.
               </Button>
             </div>
 
-            {clienteId && (
+            {clienteId ? (
               <div className="mt-2 text-center">
                 <Badge tone="primary">
                   {clientes.find((c) => c.id === clienteId)?.nombre}
                 </Badge>
               </div>
+            ) : (
+              <p className="mt-2 text-center text-[11px] text-muted">
+                Seleccioná un cliente para habilitar Cta. Cte.
+              </p>
             )}
           </div>
         </div>

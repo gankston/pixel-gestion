@@ -3,7 +3,7 @@ import { Plus, ChevronDown, ChevronUp, Pencil, Trash2, FileText, CreditCard } fr
 import Page from '../components/Page'
 import { Button, TextInput, Field, Modal, Badge } from '../components/ui'
 import { money } from '../lib/format'
-import type { Proveedor, FacturaProveedor } from '../../../preload'
+import type { Proveedor, FacturaProveedor, ChequeCartera } from '../../../preload'
 
 type Medio = 'efectivo' | 'transferencia' | 'debito' | 'credito' | 'cheque'
 
@@ -35,6 +35,8 @@ export default function Proveedores(): JSX.Element {
   const [montoPago, setMontoPago] = useState('')
   const [medioPago, setMedioPago] = useState<Medio>('efectivo')
   const [pagando, setPagando] = useState(false)
+  const [chequesCartera, setChequesCartera] = useState<ChequeCartera[]>([])
+  const [chequeId, setChequeId] = useState<number | null>(null)
 
   function recargar(): void {
     window.api.listProveedores(filtro).then(setProveedores)
@@ -108,21 +110,31 @@ export default function Proveedores(): JSX.Element {
     }
   }
 
+  async function cargarChequesCartera(): Promise<void> {
+    const cheques = await window.api.chequesEnCartera()
+    setChequesCartera(cheques)
+    setChequeId(cheques[0]?.id ?? null)
+  }
+
   async function registrarPago(): Promise<void> {
     if (!modalPago || !montoPago) return
     const monto = Number(montoPago)
     if (monto <= 0) return
+    if (medioPago === 'cheque' && !chequeId) return
     setPagando(true)
     try {
       await window.api.pagarProveedor({
         proveedorId: modalPago.prov.id,
         facturaId: modalPago.factura?.id ?? null,
         medioPago,
+        chequeId: medioPago === 'cheque' ? chequeId : null,
         monto
       })
       setModalPago(null)
       setMontoPago('')
       setMedioPago('efectivo')
+      setChequeId(null)
+      setChequesCartera([])
       setFacturasMap({})
       recargar()
     } finally {
@@ -354,7 +366,7 @@ export default function Proveedores(): JSX.Element {
       <Modal
         open={!!modalPago}
         title={`Pagar a ${modalPago?.prov.nombre}`}
-        onClose={() => setModalPago(null)}
+        onClose={() => { setModalPago(null); setChequesCartera([]); setChequeId(null) }}
         footer={
           <>
             <Button variant="secondary" onClick={() => setModalPago(null)}>Cancelar</Button>
@@ -369,7 +381,11 @@ export default function Proveedores(): JSX.Element {
             <Field label="Medio de pago">
               <select
                 value={medioPago}
-                onChange={(e) => setMedioPago(e.target.value as Medio)}
+                onChange={(e) => {
+                  const m = e.target.value as Medio
+                  setMedioPago(m)
+                  if (m === 'cheque' && chequesCartera.length === 0) cargarChequesCartera()
+                }}
                 className="w-full rounded border border-line bg-panel px-3 py-[7px] text-[13px] outline-none focus:border-primary"
               >
                 <option value="efectivo">Efectivo</option>
@@ -386,6 +402,30 @@ export default function Proveedores(): JSX.Element {
                 onChange={(e) => setMontoPago(e.target.value)}
               />
             </Field>
+            {medioPago === 'cheque' && (
+              <Field label="Cheque a entregar" className="col-span-2">
+                {chequesCartera.length === 0 ? (
+                  <p className="rounded border border-warn/30 bg-warn/8 px-3 py-2 text-[12px] text-warn">
+                    No hay cheques en cartera disponibles.
+                  </p>
+                ) : (
+                  <select
+                    value={chequeId ?? ''}
+                    onChange={(e) => setChequeId(Number(e.target.value))}
+                    className="w-full rounded border border-line bg-panel px-3 py-[7px] text-[13px] outline-none focus:border-primary"
+                  >
+                    {chequesCartera.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.numero ? `N° ${c.numero}` : `Cheque #${c.id}`}
+                        {c.banco ? ` — ${c.banco}` : ''}
+                        {` — ${money(c.monto)}`}
+                        {` (cobro: ${c.fecha_cobro?.slice(0, 10)})`}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </Field>
+            )}
             {modalPago.factura && (
               <p className="col-span-2 text-[12px] text-muted">
                 Factura #{modalPago.factura.id} — Saldo: <span className="font-semibold text-danger">{money(modalPago.factura.saldo)}</span>

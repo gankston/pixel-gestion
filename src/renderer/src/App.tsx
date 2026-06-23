@@ -44,12 +44,12 @@ const NAV_VENDEDOR: { id: SeccionId; label: string; Icon: React.FC<{ size?: numb
   { id: 'stock', label: 'Stock', Icon: Archive },
   { id: 'presupuestos', label: 'Presupuestos', Icon: FileText },
   { id: 'clientes', label: 'Clientes', Icon: Users },
-  { id: 'cuentacorriente', label: 'Cta. Corriente', Icon: CreditCard },
-  { id: 'chequescartera', label: 'Cheques', Icon: CheckSquare }
+  { id: 'cuentacorriente', label: 'Cta. Corriente', Icon: CreditCard }
 ]
 
 const NAV_ADMIN = [
   ...NAV_VENDEDOR,
+  { id: 'chequescartera' as SeccionId, label: 'Cheques', Icon: CheckSquare },
   { id: 'caja' as SeccionId, label: 'Caja diaria', Icon: Wallet },
   { id: 'proveedores' as SeccionId, label: 'Proveedores', Icon: Truck },
   { id: 'reportes' as SeccionId, label: 'Reportes', Icon: BarChart2 }
