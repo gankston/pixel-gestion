@@ -10,10 +10,12 @@ export interface ChequeInput {
   origenId?: number | null
 }
 
+const CHEQUE_COLS = `id, numero, banco, monto, fecha_emision::TEXT AS fecha_emision, fecha_cobro::TEXT AS fecha_cobro, estado, origen_tipo, origen_id, destino_proveedor_id`
+
 export async function listarCheques(estado?: string) {
   return estado
-    ? query(`SELECT * FROM cheques_cartera WHERE estado = $1 ORDER BY fecha_cobro ASC`, [estado])
-    : query(`SELECT * FROM cheques_cartera ORDER BY fecha_cobro ASC`)
+    ? query(`SELECT ${CHEQUE_COLS} FROM cheques_cartera WHERE estado = $1 ORDER BY fecha_cobro ASC`, [estado])
+    : query(`SELECT ${CHEQUE_COLS} FROM cheques_cartera ORDER BY fecha_cobro ASC`)
 }
 
 export async function registrarCheque(data: ChequeInput): Promise<number> {
@@ -37,5 +39,5 @@ export async function marcarCobrado(id: number): Promise<void> {
 }
 
 export async function chequesEnCartera() {
-  return query(`SELECT * FROM cheques_cartera WHERE estado = 'en_cartera' ORDER BY fecha_cobro ASC`)
+  return query(`SELECT ${CHEQUE_COLS} FROM cheques_cartera WHERE estado = 'en_cartera' ORDER BY fecha_cobro ASC`)
 }

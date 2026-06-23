@@ -52,7 +52,7 @@ export async function eliminarProveedor(id: number): Promise<void> {
 
 export async function listarFacturas(proveedorId: number) {
   return query(
-    `SELECT * FROM facturas_proveedor WHERE proveedor_id = $1 ORDER BY fecha DESC`,
+    `SELECT id, proveedor_id, numero, fecha::TEXT AS fecha, total, saldo, estado FROM facturas_proveedor WHERE proveedor_id = $1 ORDER BY fecha DESC`,
     [proveedorId]
   )
 }
