@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowDownToLine, SlidersHorizontal } from 'lucide-react'
+import { SlidersHorizontal } from 'lucide-react'
 import Page from '../components/Page'
 import { Button, TextInput, Field, Modal, Badge } from '../components/ui'
 import type { ArticuloConPrecios } from '../../../preload'
@@ -21,23 +21,18 @@ export default function Stock(): JSX.Element {
   }
   useEffect(recargar, [filtro])
 
-  function abrirIngreso(a: ArticuloConPrecios): void {
-    setAccion({ art: a, tipo: 'ingreso' })
-    setCantidad('1')
-  }
-  function abrirAjuste(a: ArticuloConPrecios): void {
+  function abrirStock(a: ArticuloConPrecios): void {
     setAccion({ art: a, tipo: 'ajuste' })
-    setCantidad('0')
+    setCantidad('')
   }
 
   async function confirmar(): Promise<void> {
     if (!accion) return
     const cant = Number(cantidad)
-    if (accion.tipo === 'ingreso' && cant <= 0) return
-    if (accion.tipo === 'ajuste' && cant === 0) return
+    if (!cant) return
     setGuardando(true)
     try {
-      if (accion.tipo === 'ingreso') await window.api.ingresoStock(accion.art.id, cant)
+      if (cant > 0) await window.api.ingresoStock(accion.art.id, cant)
       else await window.api.ajusteStock(accion.art.id, cant)
       setAccion(null)
       recargar()
@@ -86,22 +81,13 @@ export default function Stock(): JSX.Element {
                       : <Badge tone="ok">OK</Badge>}
                   </td>
                   <td className="px-4 py-2.5">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => abrirIngreso(a)}
-                        className="flex h-7 w-7 items-center justify-center rounded border border-transparent text-muted transition-colors hover:border-ok/40 hover:text-ok"
-                        title="Ingreso de mercadería"
-                      >
-                        <ArrowDownToLine size={13} />
-                      </button>
-                      <button
-                        onClick={() => abrirAjuste(a)}
-                        className="flex h-7 w-7 items-center justify-center rounded border border-transparent text-muted transition-colors hover:border-line hover:text-ink"
-                        title="Ajuste manual"
-                      >
-                        <SlidersHorizontal size={13} />
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => abrirStock(a)}
+                      className="flex h-7 w-7 items-center justify-center rounded border border-transparent text-muted transition-colors hover:border-line hover:text-ink"
+                      title="Agregar o quitar stock"
+                    >
+                      <SlidersHorizontal size={13} />
+                    </button>
                   </td>
                 </tr>
               )
@@ -119,15 +105,12 @@ export default function Stock(): JSX.Element {
 
       <Modal
         open={!!accion}
-        title={accion?.tipo === 'ingreso' ? 'Ingreso de mercadería' : 'Ajuste de stock'}
+        title="Actualizar stock"
         onClose={() => setAccion(null)}
         footer={
           <>
             <Button variant="secondary" onClick={() => setAccion(null)}>Cancelar</Button>
-            <Button
-              onClick={confirmar}
-              disabled={guardando || !cantidad || Number(cantidad) === 0 || (accion?.tipo === 'ingreso' && Number(cantidad) <= 0)}
-            >
+            <Button onClick={confirmar} disabled={guardando || !cantidad || Number(cantidad) === 0}>
               {guardando ? 'Guardando...' : 'Confirmar'}
             </Button>
           </>
@@ -139,17 +122,21 @@ export default function Stock(): JSX.Element {
               <span className="font-semibold">{accion.art.nombre}</span>
               <span className="ml-2 text-muted">— stock actual: {accion.art.stock_disponible}</span>
             </p>
-            <Field label={accion.tipo === 'ingreso' ? 'Cantidad a sumar' : 'Cantidad (negativo para restar)'}>
+            <Field label="Cantidad (negativo para quitar, positivo para agregar)">
               <TextInput
                 type="number"
                 value={cantidad}
                 onChange={(e) => setCantidad(e.target.value)}
                 autoFocus
+                placeholder="ej: 10 o -3"
               />
             </Field>
-            {accion.tipo === 'ajuste' && Number(cantidad) !== 0 && (
+            {cantidad !== '' && Number(cantidad) !== 0 && (
               <p className="text-[12px] text-muted">
-                Stock resultante: <span className="font-semibold text-ink">{accion.art.stock_disponible + Number(cantidad)}</span>
+                Stock resultante:{' '}
+                <span className={`font-semibold ${accion.art.stock_disponible + Number(cantidad) < 0 ? 'text-danger' : 'text-ink'}`}>
+                  {accion.art.stock_disponible + Number(cantidad)}
+                </span>
               </p>
             )}
           </div>
