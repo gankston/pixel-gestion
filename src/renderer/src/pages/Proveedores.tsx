@@ -38,6 +38,7 @@ export default function Proveedores(): JSX.Element {
   const [chequesCartera, setChequesCartera] = useState<ChequeCartera[]>([])
   const [chequeId, setChequeId] = useState<number | null>(null)
   const [errorPago, setErrorPago] = useState<string | null>(null)
+  const [errorProv, setErrorProv] = useState<string | null>(null)
 
   function recargar(): void {
     window.api.listProveedores(filtro).then(setProveedores)
@@ -90,8 +91,12 @@ export default function Proveedores(): JSX.Element {
 
   async function eliminarProv(id: number): Promise<void> {
     if (!confirm('¿Eliminar este proveedor?')) return
-    await window.api.eliminarProveedor(id)
-    recargar()
+    try {
+      await window.api.eliminarProveedor(id)
+      recargar()
+    } catch (e) {
+      setErrorProv(e instanceof Error ? e.message : 'No se pudo eliminar el proveedor')
+    }
   }
 
   async function cargarFactura(): Promise<void> {
@@ -165,6 +170,13 @@ export default function Proveedores(): JSX.Element {
           Nuevo proveedor
         </Button>
       </div>
+
+      {errorProv && (
+        <div className="mb-3 flex items-center justify-between rounded border border-danger/30 bg-danger/8 px-4 py-2.5 text-[13px] text-danger">
+          <span>{errorProv}</span>
+          <button onClick={() => setErrorProv(null)} className="ml-3 text-danger/60 hover:text-danger">✕</button>
+        </div>
+      )}
 
       {totalDeuda > 0 && (
         <div className="mb-4 flex items-center justify-between rounded border border-line bg-panel px-4 py-3">
@@ -376,7 +388,7 @@ export default function Proveedores(): JSX.Element {
         onClose={() => { setModalPago(null); setChequesCartera([]); setChequeId(null); setErrorPago(null) }}
         footer={
           <>
-            <Button variant="secondary" onClick={() => setModalPago(null)}>Cancelar</Button>
+            <Button variant="secondary" onClick={() => { setModalPago(null); setChequesCartera([]); setChequeId(null); setErrorPago(null) }}>Cancelar</Button>
             <Button onClick={registrarPago} disabled={pagando || !montoPago}>
               {pagando ? 'Registrando...' : 'Registrar pago'}
             </Button>

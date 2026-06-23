@@ -57,6 +57,7 @@ export default function Caja(): JSX.Element {
 
   async function cerrar(): Promise<void> {
     if (!estado?.caja || !estado.resumen) return
+    setErrorCierre(null)
     if (!confirm('Cerrar la caja del día?')) return
     try {
       await window.api.cerrarCaja(estado.caja.id, estado.resumen.total + estado.caja.saldo_inicial)

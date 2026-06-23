@@ -34,7 +34,7 @@ export async function registrarMovimiento(
       await run('UPDATE articulos SET stock_reservado = stock_reservado + $1 WHERE id = $2', [cantidad, articuloId])
       break
     case 'liberacion':
-      await run('UPDATE articulos SET stock_reservado = stock_reservado - $1 WHERE id = $2', [cantidad, articuloId])
+      await run('UPDATE articulos SET stock_reservado = GREATEST(0, stock_reservado - $1) WHERE id = $2', [cantidad, articuloId])
       break
   }
 }

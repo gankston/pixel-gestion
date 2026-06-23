@@ -43,6 +43,7 @@ export default function Articulos(): JSX.Element {
   const [filtro, setFiltro] = useState('')
   const [form, setForm] = useState<Form | null>(null)
   const [errorEliminar, setErrorEliminar] = useState<string | null>(null)
+  const [errorGuardar, setErrorGuardar] = useState<string | null>(null)
 
   function recargar(): void {
     window.api.listArticulos(filtro).then(setArticulos)
@@ -51,8 +52,10 @@ export default function Articulos(): JSX.Element {
 
   function abrirNuevo(): void {
     setForm({ ...vacio })
+    setErrorGuardar(null)
   }
   function abrirEditar(a: ArticuloConPrecios): void {
+    setErrorGuardar(null)
     setForm({
       id: a.id,
       codigo_barras: a.codigo_barras ?? '',
@@ -73,10 +76,14 @@ export default function Articulos(): JSX.Element {
 
   async function guardar(): Promise<void> {
     if (!form || !form.nombre.trim()) return
-    if (form.id) await window.api.actualizarArticulo(form.id, form)
-    else await window.api.crearArticulo(form)
-    setForm(null)
-    recargar()
+    try {
+      if (form.id) await window.api.actualizarArticulo(form.id, form)
+      else await window.api.crearArticulo(form)
+      setForm(null)
+      recargar()
+    } catch (e) {
+      setErrorGuardar(e instanceof Error ? e.message : 'No se pudo guardar el artículo')
+    }
   }
 
   async function eliminar(a: ArticuloConPrecios): Promise<void> {
@@ -201,6 +208,12 @@ export default function Articulos(): JSX.Element {
           </>
         }
       >
+        {errorGuardar && (
+          <div className="mb-3 flex items-center justify-between rounded border border-danger/30 bg-danger/8 px-3 py-2 text-[12px] text-danger">
+            <span>{errorGuardar}</span>
+            <button onClick={() => setErrorGuardar(null)} className="ml-3 text-danger/60 hover:text-danger">✕</button>
+          </div>
+        )}
         {form && (
           <div className="grid grid-cols-2 gap-3">
             <Field label="Nombre">

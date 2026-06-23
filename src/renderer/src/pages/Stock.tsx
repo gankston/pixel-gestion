@@ -15,6 +15,7 @@ export default function Stock(): JSX.Element {
   const [accion, setAccion] = useState<Accion | null>(null)
   const [cantidad, setCantidad] = useState('')
   const [guardando, setGuardando] = useState(false)
+  const [errorStock, setErrorStock] = useState<string | null>(null)
 
   function recargar(): void {
     window.api.listArticulos(filtro).then(setArticulos)
@@ -24,18 +25,22 @@ export default function Stock(): JSX.Element {
   function abrirStock(a: ArticuloConPrecios): void {
     setAccion({ art: a, tipo: 'ajuste' })
     setCantidad('')
+    setErrorStock(null)
   }
 
   async function confirmar(): Promise<void> {
     if (!accion) return
     const cant = Math.round(Number(cantidad))
     if (!cant) return
+    setErrorStock(null)
     setGuardando(true)
     try {
       if (cant > 0) await window.api.ingresoStock(accion.art.id, cant)
       else await window.api.ajusteStock(accion.art.id, cant)
       setAccion(null)
       recargar()
+    } catch (e) {
+      setErrorStock(e instanceof Error ? e.message : 'No se pudo actualizar el stock')
     } finally {
       setGuardando(false)
     }
@@ -119,6 +124,12 @@ export default function Stock(): JSX.Element {
           </>
         }
       >
+        {errorStock && (
+          <div className="mb-3 flex items-center justify-between rounded border border-danger/30 bg-danger/8 px-3 py-2 text-[12px] text-danger">
+            <span>{errorStock}</span>
+            <button onClick={() => setErrorStock(null)} className="ml-3 text-danger/60 hover:text-danger">✕</button>
+          </div>
+        )}
         {accion && (
           <div className="space-y-3">
             <p className="text-[13px] text-ink">

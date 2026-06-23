@@ -19,6 +19,7 @@ export default function CuentaCorriente(): JSX.Element {
   const [ventasMap, setVentasMap] = useState<Record<number, Venta[]>>({})
   const [pago, setPago] = useState<PagoForm | null>(null)
   const [cargando, setCargando] = useState(false)
+  const [errorPago, setErrorPago] = useState<string | null>(null)
 
   function recargar(): void {
     window.api.listClientesConDeuda().then(setClientes)
@@ -40,6 +41,7 @@ export default function CuentaCorriente(): JSX.Element {
   async function registrarPago(): Promise<void> {
     if (!pago || pago.monto <= 0) return
     if (pago.monto > pago.cliente.saldo_cta_cte + 0.01) return
+    setErrorPago(null)
     setCargando(true)
     try {
       await window.api.registrarPago({
@@ -50,6 +52,8 @@ export default function CuentaCorriente(): JSX.Element {
       setPago(null)
       setVentasMap({})
       recargar()
+    } catch (e) {
+      setErrorPago(e instanceof Error ? e.message : 'No se pudo registrar el pago')
     } finally {
       setCargando(false)
     }
@@ -162,16 +166,22 @@ export default function CuentaCorriente(): JSX.Element {
       <Modal
         open={!!pago}
         title={`Cobrar a ${pago?.cliente.nombre ?? ''}`}
-        onClose={() => setPago(null)}
+        onClose={() => { setPago(null); setErrorPago(null) }}
         footer={
           <>
-            <Button variant="secondary" onClick={() => setPago(null)}>Cancelar</Button>
+            <Button variant="secondary" onClick={() => { setPago(null); setErrorPago(null) }}>Cancelar</Button>
             <Button onClick={registrarPago} disabled={cargando || !pago || pago.monto <= 0 || pago.monto > pago.cliente.saldo_cta_cte + 0.01}>
               {cargando ? 'Registrando...' : 'Registrar pago'}
             </Button>
           </>
         }
       >
+        {errorPago && (
+          <div className="mb-3 flex items-center justify-between rounded border border-danger/30 bg-danger/8 px-3 py-2 text-[12px] text-danger">
+            <span>{errorPago}</span>
+            <button onClick={() => setErrorPago(null)} className="ml-3 text-danger/60 hover:text-danger">✕</button>
+          </div>
+        )}
         {pago && (
           <div className="grid grid-cols-2 gap-3">
             <Field label="Medio de pago">

@@ -12,7 +12,7 @@ export interface CajaRow {
   cerrada_en: string | null
 }
 
-const hoy = (): string => new Date().toLocaleDateString('en-CA') // YYYY-MM-DD
+const hoy = (): string => new Date().toISOString().slice(0, 10) // YYYY-MM-DD
 
 export async function cajaAbierta(): Promise<CajaRow | null> {
   return queryOne<CajaRow>("SELECT * FROM caja_diaria WHERE estado = 'abierta' ORDER BY id DESC LIMIT 1")

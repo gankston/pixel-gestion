@@ -49,21 +49,39 @@ export default function Reportes(): JSX.Element {
   const [productosTop, setProductosTop] = useState<ProductoTop[]>([])
   const [stockBajo, setStockBajo] = useState<StockBajo[]>([])
   const [ventasLista, setVentasLista] = useState<VentaLista[]>([])
+  const [errorReportes, setErrorReportes] = useState<string | null>(null)
 
-  function cargar(): void {
-    window.api.reporteResumenMes().then(setResumen)
-    window.api.reporteVentasPorDia(30).then(setVentasDia)
-    window.api.reporteProductosTop(10).then(setProductosTop)
-    window.api.reporteStockBajo().then(setStockBajo)
-    window.api.reporteVentasPorLista().then(setVentasLista)
+  async function cargar(): Promise<void> {
+    try {
+      const [r, vd, pt, sb, vl] = await Promise.all([
+        window.api.reporteResumenMes(),
+        window.api.reporteVentasPorDia(30),
+        window.api.reporteProductosTop(10),
+        window.api.reporteStockBajo(),
+        window.api.reporteVentasPorLista()
+      ])
+      setResumen(r)
+      setVentasDia(vd)
+      setProductosTop(pt)
+      setStockBajo(sb)
+      setVentasLista(vl)
+    } catch (e) {
+      setErrorReportes(e instanceof Error ? e.message : 'No se pudieron cargar los reportes')
+    }
   }
-  useEffect(cargar, [])
+  useEffect(() => { cargar() }, [])
 
   const mesStr = new Date().toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
   const totalVentas = ventasLista.reduce((s, v) => s + v.monto, 0)
 
   return (
     <Page titulo="Reportes">
+      {errorReportes && (
+        <div className="mb-4 flex items-center justify-between rounded border border-danger/30 bg-danger/8 px-4 py-2.5 text-[13px] text-danger">
+          <span>{errorReportes}</span>
+          <button onClick={() => { setErrorReportes(null); cargar() }} className="ml-3 text-[12px] underline hover:no-underline">Reintentar</button>
+        </div>
+      )}
       {/* KPIs */}
       <div className="mb-6 grid grid-cols-4 gap-3">
         <KpiCard
@@ -138,7 +156,7 @@ export default function Reportes(): JSX.Element {
               </thead>
               <tbody>
                 {productosTop.map((p, i) => (
-                  <tr key={p.nombre} className="border-b border-line last:border-0 hover:bg-app">
+                  <tr key={i} className="border-b border-line last:border-0 hover:bg-app">
                     <td className="px-4 py-2">
                       <span className="font-mono mr-2 text-[11px] text-muted">{i + 1}.</span>
                       {p.nombre}
@@ -185,8 +203,8 @@ export default function Reportes(): JSX.Element {
               </tr>
             </thead>
             <tbody>
-              {stockBajo.map((s) => (
-                <tr key={s.nombre} className="border-b border-line last:border-0 hover:bg-app">
+              {stockBajo.map((s, i) => (
+                <tr key={i} className="border-b border-line last:border-0 hover:bg-app">
                   <td className="px-4 py-2.5 text-ink">
                     {s.nombre}
                     {s.codigo_barras && (

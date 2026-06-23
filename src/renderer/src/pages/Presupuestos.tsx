@@ -110,12 +110,20 @@ export default function Presupuestos(): JSX.Element {
     }
   }
   async function imprimir(id: number): Promise<void> {
-    const det = await window.api.detallePresupuesto(id)
-    if (det) await imprimirPresupuesto(det)
+    try {
+      const det = await window.api.detallePresupuesto(id)
+      if (det) await imprimirPresupuesto(det)
+    } catch (e) {
+      setError(`Error al imprimir: ${e instanceof Error ? e.message : String(e)}`)
+    }
   }
   async function verPdf(id: number): Promise<void> {
-    const det = await window.api.detallePresupuesto(id)
-    if (det) await verPdfPresupuesto(det)
+    try {
+      const det = await window.api.detallePresupuesto(id)
+      if (det) await verPdfPresupuesto(det)
+    } catch (e) {
+      setError(`Error al generar PDF: ${e instanceof Error ? e.message : String(e)}`)
+    }
   }
 
   return (
