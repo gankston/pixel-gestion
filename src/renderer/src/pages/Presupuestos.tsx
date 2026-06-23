@@ -98,7 +98,8 @@ export default function Presupuestos(): JSX.Element {
       await window.api.aprobarPresupuesto(id)
       recargar()
     } catch (e) {
-      setError(`No se pudo aprobar: ${e instanceof Error ? e.message : String(e)}`)
+      const msg = (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': Error: /, '')
+      setError(`No se pudo aprobar: ${msg}`)
     }
   }
   async function anular(id: number): Promise<void> {
@@ -107,7 +108,8 @@ export default function Presupuestos(): JSX.Element {
       await window.api.anularPresupuesto(id)
       recargar()
     } catch (e) {
-      setError(`No se pudo anular: ${e instanceof Error ? e.message : String(e)}`)
+      const msg = (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': Error: /, '')
+      setError(`No se pudo anular: ${msg}`)
     }
   }
   async function imprimir(id: number): Promise<void> {
@@ -115,7 +117,8 @@ export default function Presupuestos(): JSX.Element {
       const det = await window.api.detallePresupuesto(id)
       if (det) await imprimirPresupuesto(det)
     } catch (e) {
-      setError(`Error al imprimir: ${e instanceof Error ? e.message : String(e)}`)
+      const msg = (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': Error: /, '')
+      setError(`Error al imprimir: ${msg}`)
     }
   }
   async function verPdf(id: number): Promise<void> {
@@ -123,7 +126,8 @@ export default function Presupuestos(): JSX.Element {
       const det = await window.api.detallePresupuesto(id)
       if (det) await verPdfPresupuesto(det)
     } catch (e) {
-      setError(`Error al generar PDF: ${e instanceof Error ? e.message : String(e)}`)
+      const msg = (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': Error: /, '')
+      setError(`Error al generar PDF: ${msg}`)
     }
   }
 

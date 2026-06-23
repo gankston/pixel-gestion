@@ -85,9 +85,15 @@ export default function Ventas(): JSX.Element {
     if (e.key !== 'Enter') return
     const codigo = (e.target as HTMLInputElement).value.trim()
     if (!codigo) return
-    const art = await window.api.buscarCodigo(codigo)
-    if (art) agregar(art)
-    else setBusqueda(codigo)
+    try {
+      const art = await window.api.buscarCodigo(codigo)
+      if (art) agregar(art)
+      else setBusqueda(codigo)
+    } catch (ex) {
+      const raw = ex instanceof Error ? ex.message : String(ex)
+      setMensaje(raw.replace(/^Error invoking remote method '[^']+': Error: /, ''))
+      setMensajeError(true)
+    }
     if (scanRef.current) scanRef.current.value = ''
   }
 

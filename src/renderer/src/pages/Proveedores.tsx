@@ -126,11 +126,15 @@ export default function Proveedores(): JSX.Element {
   }
 
   async function cargarChequesCartera(): Promise<void> {
-    const cheques = await window.api.chequesEnCartera()
-    setChequesCartera(cheques)
-    if (cheques[0]) {
-      setChequeId(cheques[0].id)
-      setMontoPago(String(cheques[0].monto))
+    try {
+      const cheques = await window.api.chequesEnCartera()
+      setChequesCartera(cheques)
+      if (cheques[0]) {
+        setChequeId(cheques[0].id)
+        setMontoPago(String(cheques[0].monto))
+      }
+    } catch (e) {
+      setErrorPago(e instanceof Error ? e.message : 'No se pudieron cargar los cheques')
     }
   }
 

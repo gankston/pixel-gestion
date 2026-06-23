@@ -116,7 +116,7 @@ export default function Stock(): JSX.Element {
             <Button variant="secondary" onClick={() => setAccion(null)}>Cancelar</Button>
             <Button
               onClick={confirmar}
-              disabled={guardando || !cantidad || Number(cantidad) === 0 || (!!accion && accion.art.stock_fisico + Number(cantidad) < 0)}
+              disabled={guardando || !cantidad || Math.round(Number(cantidad)) === 0 || (!!accion && accion.art.stock_fisico + Math.round(Number(cantidad)) < 0)}
             >
               {guardando ? 'Guardando...' : 'Confirmar'}
             </Button>

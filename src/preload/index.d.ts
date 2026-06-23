@@ -95,6 +95,8 @@ export interface CajaEstado {
     estado: 'abierta' | 'cerrada'
     saldo_inicial: number
     saldo_final: number | null
+    abierta_en: string
+    cerrada_en: string | null
   } | null
   resumen: ResumenCaja | null
   movimientos: Array<{
