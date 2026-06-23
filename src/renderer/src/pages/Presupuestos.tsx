@@ -28,6 +28,7 @@ export default function Presupuestos(): JSX.Element {
   const [lista, setLista] = useState<Presupuesto[]>([])
   const [modal, setModal] = useState(false)
   const [error, setError] = useState('')
+  const [errorGuardar, setErrorGuardar] = useState('')
 
   const [clienteId, setClienteId] = useState<number | null>(null)
   const [clientes, setClientes] = useState<Cliente[]>([])
@@ -55,7 +56,7 @@ export default function Presupuestos(): JSX.Element {
     setListaPrecio('consumidor')
     setCarrito([])
     setBusqueda('')
-    setError('')
+    setErrorGuardar('')
     setModal(true)
   }
   function agregar(a: ArticuloConPrecios): void {
@@ -84,11 +85,10 @@ export default function Presupuestos(): JSX.Element {
           precioUnit: precioDe(it.art, listaPrecio)
         }))
       })
-      setError('')
       setModal(false)
       recargar()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo crear el presupuesto')
+      setErrorGuardar(e instanceof Error ? e.message : 'No se pudo crear el presupuesto')
     }
   }
 
@@ -231,6 +231,12 @@ export default function Presupuestos(): JSX.Element {
           </>
         }
       >
+        {errorGuardar && (
+          <div className="mb-3 flex items-center justify-between rounded border border-danger/30 bg-danger/8 px-3 py-2 text-[12px] text-danger">
+            <span>{errorGuardar}</span>
+            <button onClick={() => setErrorGuardar('')} className="ml-3 text-danger/60 hover:text-danger">✕</button>
+          </div>
+        )}
         <div className="mb-3 grid grid-cols-2 gap-3">
           <Field label="Cliente">
             <select

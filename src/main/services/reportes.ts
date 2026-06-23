@@ -6,7 +6,7 @@ export async function ventasPorDia(dias = 30) {
            COUNT(*)::int AS cantidad,
            COALESCE(SUM(total), 0)::int AS monto
     FROM ventas
-    WHERE fecha >= NOW() - ($1 || ' days')::INTERVAL
+    WHERE fecha >= NOW() - ($1::TEXT || ' days')::INTERVAL
     GROUP BY fecha::DATE
     ORDER BY dia DESC
   `, [dias])

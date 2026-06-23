@@ -413,7 +413,7 @@ export default function Proveedores(): JSX.Element {
         footer={
           <>
             <Button variant="secondary" onClick={() => { setModalPago(null); setChequesCartera([]); setChequeId(null); setErrorPago(null) }}>Cancelar</Button>
-            <Button onClick={registrarPago} disabled={pagando || !montoPago}>
+            <Button onClick={registrarPago} disabled={pagando || !montoPago || (medioPago === 'cheque' && !chequeId)}>
               {pagando ? 'Registrando...' : 'Registrar pago'}
             </Button>
           </>
