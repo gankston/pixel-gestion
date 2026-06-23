@@ -240,7 +240,7 @@ export default function Proveedores(): JSX.Element {
                         <FileText size={13} />
                       </button>
                       <button
-                        onClick={(e) => { e.stopPropagation(); setModalPago({ prov: p, factura: null }); setMontoPago(p.saldo_cta_cte > 0 ? String(p.saldo_cta_cte) : '') }}
+                        onClick={(e) => { e.stopPropagation(); setErrorPago(null); setModalPago({ prov: p, factura: null }); setMontoPago(p.saldo_cta_cte > 0 ? String(p.saldo_cta_cte) : '') }}
                         disabled={p.saldo_cta_cte <= 0}
                         className="flex h-7 w-7 items-center justify-center rounded text-muted transition-colors hover:text-ok disabled:cursor-not-allowed disabled:opacity-30"
                         title={p.saldo_cta_cte <= 0 ? 'Sin saldo pendiente' : 'Registrar pago'}
@@ -289,7 +289,7 @@ export default function Proveedores(): JSX.Element {
                                 <span className="font-mono font-semibold text-danger">Saldo: {money(f.saldo)}</span>
                                 {f.estado !== 'pagada' && (
                                   <button
-                                    onClick={() => { setModalPago({ prov: p, factura: f }); setMontoPago(String(f.saldo)); setMedioPago('efectivo') }}
+                                    onClick={() => { setErrorPago(null); setModalPago({ prov: p, factura: f }); setMontoPago(String(f.saldo)); setMedioPago('efectivo') }}
                                     className="text-[11px] text-primary hover:underline"
                                   >
                                     Pagar
