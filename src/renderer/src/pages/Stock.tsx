@@ -1,33 +1,49 @@
 import { useEffect, useState } from 'react'
 import { ArrowDownToLine, SlidersHorizontal } from 'lucide-react'
 import Page from '../components/Page'
-import { TextInput, Badge } from '../components/ui'
+import { Button, TextInput, Field, Modal, Badge } from '../components/ui'
 import type { ArticuloConPrecios } from '../../../preload'
+
+interface Accion {
+  art: ArticuloConPrecios
+  tipo: 'ingreso' | 'ajuste'
+}
 
 export default function Stock(): JSX.Element {
   const [articulos, setArticulos] = useState<ArticuloConPrecios[]>([])
   const [filtro, setFiltro] = useState('')
+  const [accion, setAccion] = useState<Accion | null>(null)
+  const [cantidad, setCantidad] = useState('')
+  const [guardando, setGuardando] = useState(false)
 
   function recargar(): void {
     window.api.listArticulos(filtro).then(setArticulos)
   }
   useEffect(recargar, [filtro])
 
-  async function ingreso(a: ArticuloConPrecios): Promise<void> {
-    const txt = prompt(`Ingreso de mercadería para "${a.nombre}". Cantidad a sumar:`, '1')
-    if (txt == null) return
-    const cant = Number(txt)
-    if (!cant || cant <= 0) { alert('La cantidad debe ser mayor a cero.'); return }
-    await window.api.ingresoStock(a.id, cant)
-    recargar()
+  function abrirIngreso(a: ArticuloConPrecios): void {
+    setAccion({ art: a, tipo: 'ingreso' })
+    setCantidad('1')
   }
-  async function ajuste(a: ArticuloConPrecios): Promise<void> {
-    const txt = prompt(`Ajuste de stock para "${a.nombre}" (negativo para restar):`, '0')
-    if (txt == null) return
-    const cant = Number(txt)
-    if (!cant) return
-    await window.api.ajusteStock(a.id, cant)
-    recargar()
+  function abrirAjuste(a: ArticuloConPrecios): void {
+    setAccion({ art: a, tipo: 'ajuste' })
+    setCantidad('0')
+  }
+
+  async function confirmar(): Promise<void> {
+    if (!accion) return
+    const cant = Number(cantidad)
+    if (accion.tipo === 'ingreso' && cant <= 0) return
+    if (accion.tipo === 'ajuste' && cant === 0) return
+    setGuardando(true)
+    try {
+      if (accion.tipo === 'ingreso') await window.api.ingresoStock(accion.art.id, cant)
+      else await window.api.ajusteStock(accion.art.id, cant)
+      setAccion(null)
+      recargar()
+    } finally {
+      setGuardando(false)
+    }
   }
 
   return (
@@ -72,14 +88,14 @@ export default function Stock(): JSX.Element {
                   <td className="px-4 py-2.5">
                     <div className="flex items-center justify-end gap-1">
                       <button
-                        onClick={() => ingreso(a)}
+                        onClick={() => abrirIngreso(a)}
                         className="flex h-7 w-7 items-center justify-center rounded border border-transparent text-muted transition-colors hover:border-ok/40 hover:text-ok"
                         title="Ingreso de mercadería"
                       >
                         <ArrowDownToLine size={13} />
                       </button>
                       <button
-                        onClick={() => ajuste(a)}
+                        onClick={() => abrirAjuste(a)}
                         className="flex h-7 w-7 items-center justify-center rounded border border-transparent text-muted transition-colors hover:border-line hover:text-ink"
                         title="Ajuste manual"
                       >
@@ -100,6 +116,45 @@ export default function Stock(): JSX.Element {
           </tbody>
         </table>
       </div>
+
+      <Modal
+        open={!!accion}
+        title={accion?.tipo === 'ingreso' ? 'Ingreso de mercadería' : 'Ajuste de stock'}
+        onClose={() => setAccion(null)}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setAccion(null)}>Cancelar</Button>
+            <Button
+              onClick={confirmar}
+              disabled={guardando || !cantidad || Number(cantidad) === 0 || (accion?.tipo === 'ingreso' && Number(cantidad) <= 0)}
+            >
+              {guardando ? 'Guardando...' : 'Confirmar'}
+            </Button>
+          </>
+        }
+      >
+        {accion && (
+          <div className="space-y-3">
+            <p className="text-[13px] text-ink">
+              <span className="font-semibold">{accion.art.nombre}</span>
+              <span className="ml-2 text-muted">— stock actual: {accion.art.stock_disponible}</span>
+            </p>
+            <Field label={accion.tipo === 'ingreso' ? 'Cantidad a sumar' : 'Cantidad (negativo para restar)'}>
+              <TextInput
+                type="number"
+                value={cantidad}
+                onChange={(e) => setCantidad(e.target.value)}
+                autoFocus
+              />
+            </Field>
+            {accion.tipo === 'ajuste' && Number(cantidad) !== 0 && (
+              <p className="text-[12px] text-muted">
+                Stock resultante: <span className="font-semibold text-ink">{accion.art.stock_disponible + Number(cantidad)}</span>
+              </p>
+            )}
+          </div>
+        )}
+      </Modal>
     </Page>
   )
 }
