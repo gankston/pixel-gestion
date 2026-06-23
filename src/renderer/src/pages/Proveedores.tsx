@@ -113,7 +113,10 @@ export default function Proveedores(): JSX.Element {
   async function cargarChequesCartera(): Promise<void> {
     const cheques = await window.api.chequesEnCartera()
     setChequesCartera(cheques)
-    setChequeId(cheques[0]?.id ?? null)
+    if (cheques[0]) {
+      setChequeId(cheques[0].id)
+      setMontoPago(String(cheques[0].monto))
+    }
   }
 
   async function registrarPago(): Promise<void> {
@@ -411,7 +414,12 @@ export default function Proveedores(): JSX.Element {
                 ) : (
                   <select
                     value={chequeId ?? ''}
-                    onChange={(e) => setChequeId(Number(e.target.value))}
+                    onChange={(e) => {
+                      const id = Number(e.target.value)
+                      setChequeId(id)
+                      const c = chequesCartera.find((x) => x.id === id)
+                      if (c) setMontoPago(String(c.monto))
+                    }}
                     className="w-full rounded border border-line bg-panel px-3 py-[7px] text-[13px] outline-none focus:border-primary"
                   >
                     {chequesCartera.map((c) => (

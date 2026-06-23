@@ -2,6 +2,8 @@ import { run, insert, query, queryOne, tx } from '../db'
 import { registrarMovimiento } from './stock'
 import { asegurarCajaAbierta, registrarMovimientoCaja, type MedioPago } from './caja'
 
+interface StockRow { nombre: string; stock_disponible: number }
+
 export interface VentaItemInput {
   articuloId: number
   cantidad: number
@@ -26,6 +28,18 @@ export async function crearVenta(input: VentaInput): Promise<{ ventaId: number; 
       'INSERT INTO ventas (cliente_id, presupuesto_id, lista, total) VALUES ($1,$2,$3,0)',
       [input.clienteId ?? null, input.presupuestoId ?? null, input.lista]
     )
+
+    // Validar stock antes de procesar cualquier item
+    for (const it of input.items) {
+      const art = await queryOne<StockRow>(
+        `SELECT nombre, (stock_fisico - stock_reservado) AS stock_disponible FROM articulos WHERE id = $1`,
+        [it.articuloId]
+      )
+      if (!art || art.stock_disponible < it.cantidad) {
+        const nombre = art?.nombre ?? `#${it.articuloId}`
+        throw new Error(`Stock insuficiente: "${nombre}" (disponible: ${art?.stock_disponible ?? 0}, pedido: ${it.cantidad})`)
+      }
+    }
 
     let total = 0
     for (const it of input.items) {

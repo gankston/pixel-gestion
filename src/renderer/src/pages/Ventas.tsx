@@ -44,6 +44,7 @@ export default function Ventas(): JSX.Element {
   const [medio, setMedio] = useState<Medio>('efectivo')
   const [chequeForm, setChequeForm] = useState<ChequeForm>(FORM_CHEQUE_VACIO)
   const [mensaje, setMensaje] = useState('')
+  const [mensajeError, setMensajeError] = useState(false)
   const [ultimaVentaId, setUltimaVentaId] = useState<number | null>(null)
   const scanRef = useRef<HTMLInputElement>(null)
 
@@ -75,6 +76,7 @@ export default function Ventas(): JSX.Element {
     setBusqueda('')
     setResultados([])
     setMensaje('')
+    setMensajeError(false)
     setUltimaVentaId(null)
     scanRef.current?.focus()
   }
@@ -110,7 +112,15 @@ export default function Ventas(): JSX.Element {
       precioUnit: precioDe(it.art, lista)
     }))
     const pagos = fiar ? [] : [{ medio, monto: total }]
-    const r = await window.api.crearVenta({ clienteId, lista, items, pagos })
+    let r: { ventaId: number; total: number }
+    try {
+      r = await window.api.crearVenta({ clienteId, lista, items, pagos })
+    } catch (e: unknown) {
+      const raw = e instanceof Error ? e.message : String(e)
+      setMensaje(raw.replace(/^Error invoking remote method '[^']+': Error: /, ''))
+      setMensajeError(true)
+      return
+    }
 
     if (!fiar && medio === 'cheque') {
       await window.api.registrarCheque({
@@ -126,6 +136,7 @@ export default function Ventas(): JSX.Element {
 
     setCarrito([])
     setUltimaVentaId(r.ventaId)
+    setMensajeError(false)
     setMensaje(
       fiar
         ? `Venta #${r.ventaId} a cuenta corriente por ${money(r.total)}.`
@@ -208,9 +219,9 @@ export default function Ventas(): JSX.Element {
 
           {/* Banner resultado */}
           {mensaje && (
-            <div className="mt-4 flex items-center gap-3 rounded border border-ok/30 bg-ok/8 px-4 py-3">
-              <CheckCircle2 size={16} className="shrink-0 text-ok" />
-              <span className="flex-1 text-[13px] text-ok">{mensaje}</span>
+            <div className={`mt-4 flex items-center gap-3 rounded border px-4 py-3 ${mensajeError ? 'border-danger/30 bg-danger/8' : 'border-ok/30 bg-ok/8'}`}>
+              <CheckCircle2 size={16} className={`shrink-0 ${mensajeError ? 'text-danger' : 'text-ok'}`} />
+              <span className={`flex-1 text-[13px] ${mensajeError ? 'text-danger' : 'text-ok'}`}>{mensaje}</span>
               {ultimaVentaId && (
                 <div className="flex shrink-0 gap-1">
                   <button
