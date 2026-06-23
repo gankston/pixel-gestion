@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs'
-import { queryOne } from '../db'
+import { queryOne, query } from '../db'
 
 export interface Usuario {
   id: number
@@ -13,6 +13,12 @@ interface UsuarioRow {
   password_hash: string
   perfil: 'vendedor' | 'admin'
   activo: number
+}
+
+export async function listarUsuarios(): Promise<Usuario[]> {
+  return query<Usuario>(
+    'SELECT id, nombre, perfil FROM usuarios WHERE activo = 1 ORDER BY id'
+  )
 }
 
 export async function login(nombre: string, password: string): Promise<Usuario> {

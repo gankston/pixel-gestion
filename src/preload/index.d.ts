@@ -33,6 +33,8 @@ export interface ArticuloConPrecios {
   stock_reservado: number
   stock_disponible: number
   stock_minimo: number
+  iva_alicuota: number
+  precio_usd: number | null
   precios: PreciosCalculados
 }
 
@@ -44,6 +46,37 @@ export interface Cliente {
   telefono: string | null
   email: string | null
   saldo_cta_cte: number
+}
+
+export interface Proveedor {
+  id: number
+  nombre: string
+  cuit: string | null
+  telefono: string | null
+  email: string | null
+  saldo_cta_cte: number
+}
+
+export interface FacturaProveedor {
+  id: number
+  proveedor_id: number
+  numero: string | null
+  fecha: string
+  total: number
+  saldo: number
+  estado: 'pendiente' | 'parcial' | 'pagada'
+}
+
+export interface ChequeCartera {
+  id: number
+  numero: string | null
+  banco: string | null
+  monto: number
+  fecha_emision: string | null
+  fecha_cobro: string
+  estado: 'en_cartera' | 'cobrado' | 'entregado'
+  origen_tipo: string | null
+  origen_id: number | null
 }
 
 export interface ResumenCaja {
@@ -139,10 +172,17 @@ export interface ResumenMes {
   hoy: { cantidad: number; monto: number }
 }
 
+export interface VentaLista {
+  lista: string
+  cantidad: number
+  monto: number
+}
+
 export interface Api {
   dbStatus: () => Promise<DbStatus>
   initDb: (url: string) => Promise<{ ok: boolean; error?: string }>
 
+  listarUsuarios: () => Promise<Usuario[]>
   login: (nombre: string, password: string) => Promise<Usuario>
 
   listArticulos: (filtro?: string) => Promise<ArticuloConPrecios[]>
@@ -180,6 +220,21 @@ export interface Api {
   reporteProductosTop: (limite?: number) => Promise<ProductoTop[]>
   reporteStockBajo: () => Promise<StockBajo[]>
   reporteResumenMes: () => Promise<ResumenMes>
+  reporteVentasPorLista: () => Promise<VentaLista[]>
+
+  listProveedores: (filtro?: string) => Promise<Proveedor[]>
+  crearProveedor: (data: unknown) => Promise<number>
+  actualizarProveedor: (id: number, data: unknown) => Promise<void>
+  eliminarProveedor: (id: number) => Promise<void>
+  facturasProveedor: (provId: number) => Promise<FacturaProveedor[]>
+  cargarFacturaProveedor: (provId: number, total: number) => Promise<void>
+  pagarProveedor: (data: unknown) => Promise<number>
+  pagosProveedor: (provId: number) => Promise<unknown[]>
+
+  listCheques: (estado?: string) => Promise<ChequeCartera[]>
+  registrarCheque: (data: unknown) => Promise<number>
+  marcarChequeCobrado: (id: number) => Promise<void>
+  chequesEnCartera: () => Promise<ChequeCartera[]>
 
   hacerBackup: () => Promise<{ ok: boolean; archivo: string | null }>
   listarBackups: () => Promise<unknown[]>

@@ -2,8 +2,11 @@ import { app, shell, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { initDb } from './db'
-import { getConfig } from './config'
+import { getConfig, saveConfig } from './config'
 import { registerIpc } from './ipc'
+
+const RAILWAY_URL =
+  'postgresql://postgres:XyRkpEbSTuKBHXvdQGjPVjIEqDgkiUYl@reseau.proxy.rlwy.net:40549/railway'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -44,14 +47,13 @@ app.whenReady().then(async () => {
 
   registerIpc()
 
-  // Auto-conectar si ya hay config guardada
   const config = getConfig()
-  if (config) {
-    try {
-      await initDb(config.databaseUrl)
-    } catch {
-      // El renderer mostrará el error via app:dbStatus
-    }
+  const dbUrl = config?.databaseUrl ?? RAILWAY_URL
+  try {
+    await initDb(dbUrl)
+    if (!config) saveConfig({ databaseUrl: dbUrl })
+  } catch {
+    // El renderer mostrará el error via app:dbStatus
   }
 
   createWindow()

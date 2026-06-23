@@ -18,6 +18,8 @@ interface Form {
   precio_oferta: number | null
   stock_fisico: number
   stock_minimo: number
+  iva_alicuota: number
+  precio_usd: number | null
 }
 
 const vacio: Form = {
@@ -31,7 +33,9 @@ const vacio: Form = {
   en_oferta: false,
   precio_oferta: null,
   stock_fisico: 0,
-  stock_minimo: 0
+  stock_minimo: 0,
+  iva_alicuota: 21,
+  precio_usd: null
 }
 
 export default function Articulos(): JSX.Element {
@@ -60,7 +64,9 @@ export default function Articulos(): JSX.Element {
       en_oferta: a.en_oferta === 1,
       precio_oferta: a.precio_oferta,
       stock_fisico: a.stock_fisico,
-      stock_minimo: a.stock_minimo
+      stock_minimo: a.stock_minimo,
+      iva_alicuota: a.iva_alicuota ?? 21,
+      precio_usd: a.precio_usd ?? null
     })
   }
 
@@ -214,6 +220,25 @@ export default function Articulos(): JSX.Element {
                 <TextInput type="number" value={form.stock_fisico} onChange={(e) => set('stock_fisico', Number(e.target.value))} />
               </Field>
             )}
+            <Field label="IVA">
+              <select
+                value={form.iva_alicuota}
+                onChange={(e) => set('iva_alicuota', Number(e.target.value))}
+                className="w-full rounded border border-line bg-panel px-3 py-[7px] text-[13px] outline-none focus:border-primary"
+              >
+                <option value={21}>21%</option>
+                <option value={10.5}>10.5%</option>
+                <option value={0}>Exento (0%)</option>
+              </select>
+            </Field>
+            <Field label="Precio USD (opcional)">
+              <TextInput
+                type="number"
+                value={form.precio_usd ?? ''}
+                onChange={(e) => set('precio_usd', e.target.value ? Number(e.target.value) : null)}
+                placeholder="0.00"
+              />
+            </Field>
             <div className="col-span-2 flex items-center gap-3 rounded border border-line bg-app p-3">
               <label className="flex cursor-pointer items-center gap-2 text-[13px]">
                 <input type="checkbox" checked={form.en_oferta} onChange={(e) => set('en_oferta', e.target.checked)} />

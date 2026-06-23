@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Database, TrendingUp, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import Page from '../components/Page'
-import { Button, Badge } from '../components/ui'
+import { Badge } from '../components/ui'
 import { money } from '../lib/format'
-import type { VentaDia, ProductoTop, StockBajo, ResumenMes, BackupInfo } from '../../../preload'
+import type { VentaDia, ProductoTop, StockBajo, ResumenMes, VentaLista } from '../../../preload'
 
 function fmtDia(yyyymmdd: string): string {
   const [y, m, d] = yyyymmdd.split('-')
@@ -48,30 +48,19 @@ export default function Reportes(): JSX.Element {
   const [ventasDia, setVentasDia] = useState<VentaDia[]>([])
   const [productosTop, setProductosTop] = useState<ProductoTop[]>([])
   const [stockBajo, setStockBajo] = useState<StockBajo[]>([])
-  const [backups, setBackups] = useState<BackupInfo[]>([])
-  const [backupMsg, setBackupMsg] = useState('')
+  const [ventasLista, setVentasLista] = useState<VentaLista[]>([])
 
   function cargar(): void {
     window.api.reporteResumenMes().then(setResumen)
     window.api.reporteVentasPorDia(30).then(setVentasDia)
     window.api.reporteProductosTop(10).then(setProductosTop)
     window.api.reporteStockBajo().then(setStockBajo)
-    window.api.listarBackups().then(setBackups)
+    window.api.reporteVentasPorLista().then(setVentasLista)
   }
   useEffect(cargar, [])
 
-  async function backup(): Promise<void> {
-    const r = await window.api.hacerBackup()
-    if (r.ok) {
-      setBackupMsg('Backup realizado correctamente.')
-      window.api.listarBackups().then(setBackups)
-    } else {
-      setBackupMsg('No se pudo realizar el backup.')
-    }
-    setTimeout(() => setBackupMsg(''), 3000)
-  }
-
   const mesStr = new Date().toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
+  const totalVentas = ventasLista.reduce((s, v) => s + v.monto, 0)
 
   return (
     <Page titulo="Reportes">
@@ -214,45 +203,37 @@ export default function Reportes(): JSX.Element {
         )}
       </div>
 
-      {/* Backup */}
-      <div className="rounded border border-line bg-panel p-5">
-        <div className="mb-4 flex items-start justify-between">
-          <div className="flex items-start gap-2.5">
-            <Database size={16} className="mt-0.5 shrink-0 text-muted" />
-            <div>
-              <div className="text-[13px] font-semibold text-ink">Backup de base de datos</div>
-              <div className="mt-0.5 text-[12px] text-muted">
-                Copia diaria en carpeta de datos. Se conservan los últimos 7 días.
-              </div>
-            </div>
-          </div>
-          <Button variant="secondary" onClick={backup}>Hacer backup ahora</Button>
+      {/* Ventas por lista — mayorista vs consumidor */}
+      <div className="mb-5 overflow-hidden rounded border border-line bg-panel">
+        <div className="flex items-center gap-2 border-b border-line px-4 py-3">
+          <Database size={14} className="text-muted" />
+          <span className="text-[13px] font-semibold text-ink">Mix de ventas — {mesStr}</span>
         </div>
-        {backupMsg && (
-          <div className="mb-3 flex items-center gap-2 rounded border border-ok/30 bg-ok/8 px-3 py-2 text-[12px] text-ok">
-            <CheckCircle2 size={13} />
-            {backupMsg}
-          </div>
-        )}
-        {backups.length > 0 ? (
-          <table className="w-full text-[12px]">
-            <thead>
-              <tr className="text-left">
-                <th className="pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted">Archivo</th>
-                <th className="pb-2 text-right text-[11px] font-semibold uppercase tracking-wider text-muted">Tamaño</th>
-              </tr>
-            </thead>
-            <tbody>
-              {backups.map((b) => (
-                <tr key={b.archivo} className="border-t border-line">
-                  <td className="py-1.5 font-mono text-ink">{b.archivo}</td>
-                  <td className="py-1.5 text-right font-mono text-muted">{b.tamanoKb} KB</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {ventasLista.length === 0 ? (
+          <p className="px-4 py-6 text-center text-[13px] text-muted">Sin ventas este mes.</p>
         ) : (
-          <p className="text-[12px] text-muted">Aún no hay backups.</p>
+          <div className="grid grid-cols-2 gap-0 divide-x divide-line">
+            {ventasLista.map((v) => {
+              const pct = totalVentas > 0 ? Math.round((v.monto / totalVentas) * 100) : 0
+              return (
+                <div key={v.lista} className="px-6 py-5">
+                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted capitalize">
+                    {v.lista}
+                  </p>
+                  <p className="font-mono text-2xl font-bold text-ink">{pct}%</p>
+                  <p className="mt-0.5 text-[12px] text-muted">
+                    {v.cantidad} ventas · {money(v.monto)}
+                  </p>
+                  <div className="mt-3 h-1.5 w-full rounded-full bg-line">
+                    <div
+                      className="h-1.5 rounded-full bg-primary"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         )}
       </div>
     </Page>

@@ -7,6 +7,7 @@ const api = {
   initDb: (url: string) => ipcRenderer.invoke('app:initDb', url),
 
   // Auth
+  listarUsuarios: () => ipcRenderer.invoke('auth:usuarios'),
   login: (nombre: string, password: string) => ipcRenderer.invoke('auth:login', nombre, password),
 
   // Articulos
@@ -55,6 +56,25 @@ const api = {
   reporteProductosTop: (limite?: number) => ipcRenderer.invoke('reportes:productosTop', limite),
   reporteStockBajo: () => ipcRenderer.invoke('reportes:stockBajo'),
   reporteResumenMes: () => ipcRenderer.invoke('reportes:resumenMes'),
+  reporteVentasPorLista: () => ipcRenderer.invoke('reportes:ventasPorLista'),
+
+  // Proveedores
+  listProveedores: (filtro?: string) => ipcRenderer.invoke('proveedores:list', filtro),
+  crearProveedor: (data: unknown) => ipcRenderer.invoke('proveedores:crear', data),
+  actualizarProveedor: (id: number, data: unknown) =>
+    ipcRenderer.invoke('proveedores:actualizar', id, data),
+  eliminarProveedor: (id: number) => ipcRenderer.invoke('proveedores:eliminar', id),
+  facturasProveedor: (provId: number) => ipcRenderer.invoke('proveedores:facturas', provId),
+  cargarFacturaProveedor: (provId: number, total: number) =>
+    ipcRenderer.invoke('proveedores:cargarFactura', provId, total),
+  pagarProveedor: (data: unknown) => ipcRenderer.invoke('proveedores:pago', data),
+  pagosProveedor: (provId: number) => ipcRenderer.invoke('proveedores:pagos', provId),
+
+  // Cheques cartera
+  listCheques: (estado?: string) => ipcRenderer.invoke('cheques:list', estado),
+  registrarCheque: (data: unknown) => ipcRenderer.invoke('cheques:registrar', data),
+  marcarChequeCobrado: (id: number) => ipcRenderer.invoke('cheques:cobrado', id),
+  chequesEnCartera: () => ipcRenderer.invoke('cheques:enCartera'),
 
   // Backup (no-op con Railway)
   hacerBackup: () => ipcRenderer.invoke('backup:hacer'),

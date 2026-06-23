@@ -8,9 +8,11 @@ import * as presupuestos from '../services/presupuestos'
 import * as caja from '../services/caja'
 import * as clientes from '../services/clientes'
 import * as reportes from '../services/reportes'
+import * as proveedores from '../services/proveedores'
+import * as cheques from '../services/cheques'
 import { registrarMovimiento } from '../services/stock'
 import { calcularPrecios, type ArticuloPrecio } from '../services/precios'
-import { login } from '../services/auth'
+import { login, listarUsuarios } from '../services/auth'
 import { initDb, dbConnected, dbError } from '../db'
 import { getConfig, saveConfig } from '../config'
 
@@ -18,14 +20,11 @@ export function registerIpc(): void {
   ipcMain.handle('app:ping', () => 'pong')
 
   // Config / DB setup
-  ipcMain.handle('app:dbStatus', () => {
-    const config = getConfig()
-    return {
-      connected: dbConnected,
-      needsSetup: !config,
-      error: dbError
-    }
-  })
+  ipcMain.handle('app:dbStatus', () => ({
+    connected: dbConnected,
+    needsSetup: false,
+    error: dbError
+  }))
 
   ipcMain.handle('app:initDb', async (_e, url: string) => {
     try {
@@ -39,6 +38,7 @@ export function registerIpc(): void {
   })
 
   // Auth
+  ipcMain.handle('auth:usuarios', () => listarUsuarios())
   ipcMain.handle('auth:login', async (_e, nombre: string, password: string) => {
     return login(nombre, password)
   })
@@ -99,6 +99,23 @@ export function registerIpc(): void {
   ipcMain.handle('reportes:productosTop', (_e, limite?: number) => reportes.productosTopVentas(limite ?? 10))
   ipcMain.handle('reportes:stockBajo', () => reportes.stockBajoMinimo())
   ipcMain.handle('reportes:resumenMes', () => reportes.resumenMes())
+  ipcMain.handle('reportes:ventasPorLista', () => reportes.ventasPorLista())
+
+  // Proveedores
+  ipcMain.handle('proveedores:list', (_e, filtro?: string) => proveedores.listarProveedores(filtro ?? ''))
+  ipcMain.handle('proveedores:crear', (_e, data: proveedores.ProveedorInput) => proveedores.crearProveedor(data))
+  ipcMain.handle('proveedores:actualizar', (_e, id: number, data: proveedores.ProveedorInput) => proveedores.actualizarProveedor(id, data))
+  ipcMain.handle('proveedores:eliminar', (_e, id: number) => proveedores.eliminarProveedor(id))
+  ipcMain.handle('proveedores:facturas', (_e, provId: number) => proveedores.listarFacturas(provId))
+  ipcMain.handle('proveedores:cargarFactura', (_e, provId: number, total: number) => proveedores.cargarFactura(provId, total))
+  ipcMain.handle('proveedores:pago', (_e, data: proveedores.PagoProvInput) => proveedores.registrarPagoProveedor(data))
+  ipcMain.handle('proveedores:pagos', (_e, provId: number) => proveedores.listarPagos(provId))
+
+  // Cheques cartera
+  ipcMain.handle('cheques:list', (_e, estado?: string) => cheques.listarCheques(estado))
+  ipcMain.handle('cheques:registrar', (_e, data: cheques.ChequeInput) => cheques.registrarCheque(data))
+  ipcMain.handle('cheques:cobrado', (_e, id: number) => cheques.marcarCobrado(id))
+  ipcMain.handle('cheques:enCartera', () => cheques.chequesEnCartera())
 
   // Backup: con PostgreSQL en Railway no aplica backup local
   ipcMain.handle('backup:hacer', () => ({ ok: false, archivo: null }))

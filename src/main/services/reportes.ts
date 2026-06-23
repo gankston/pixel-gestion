@@ -62,3 +62,15 @@ export async function resumenMes() {
 
   return { mes, hoy }
 }
+
+export async function ventasPorLista() {
+  const inicioMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
+  return query<{ lista: string; cantidad: number; monto: number }>(`
+    SELECT lista,
+           COUNT(*)::int AS cantidad,
+           COALESCE(SUM(total), 0)::int AS monto
+    FROM ventas
+    WHERE fecha >= $1
+    GROUP BY lista
+  `, [inicioMes])
+}

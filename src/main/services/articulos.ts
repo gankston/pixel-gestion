@@ -15,6 +15,8 @@ export interface ArticuloRow {
   stock_fisico: number
   stock_reservado: number
   stock_minimo: number
+  iva_alicuota: number
+  precio_usd: number | null
 }
 
 export interface ArticuloInput {
@@ -29,6 +31,8 @@ export interface ArticuloInput {
   precio_oferta?: number | null
   stock_fisico?: number
   stock_minimo?: number
+  iva_alicuota?: number
+  precio_usd?: number | null
 }
 
 function conPrecios(r: ArticuloRow) {
@@ -68,8 +72,9 @@ export async function buscarPorCodigo(codigo: string) {
 export async function crearArticulo(data: ArticuloInput): Promise<number> {
   return insert(
     `INSERT INTO articulos
-       (codigo_barras, nombre, rubro, neto, descuento_pct, markup_mayorista_pct, markup_consumidor_pct, en_oferta, precio_oferta, stock_fisico, stock_minimo)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+       (codigo_barras, nombre, rubro, neto, descuento_pct, markup_mayorista_pct, markup_consumidor_pct,
+        en_oferta, precio_oferta, stock_fisico, stock_minimo, iva_alicuota, precio_usd)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
     [
       data.codigo_barras || null,
       data.nombre,
@@ -81,7 +86,9 @@ export async function crearArticulo(data: ArticuloInput): Promise<number> {
       data.en_oferta ? 1 : 0,
       data.precio_oferta ?? null,
       data.stock_fisico ?? 0,
-      data.stock_minimo ?? 0
+      data.stock_minimo ?? 0,
+      data.iva_alicuota ?? 21,
+      data.precio_usd ?? null
     ]
   )
 }
@@ -90,8 +97,9 @@ export async function actualizarArticulo(id: number, data: ArticuloInput): Promi
   await run(
     `UPDATE articulos SET
        codigo_barras=$1, nombre=$2, rubro=$3, neto=$4, descuento_pct=$5,
-       markup_mayorista_pct=$6, markup_consumidor_pct=$7, en_oferta=$8, precio_oferta=$9, stock_minimo=$10
-     WHERE id=$11`,
+       markup_mayorista_pct=$6, markup_consumidor_pct=$7, en_oferta=$8, precio_oferta=$9,
+       stock_minimo=$10, iva_alicuota=$11, precio_usd=$12
+     WHERE id=$13`,
     [
       data.codigo_barras || null,
       data.nombre,
@@ -103,6 +111,8 @@ export async function actualizarArticulo(id: number, data: ArticuloInput): Promi
       data.en_oferta ? 1 : 0,
       data.precio_oferta ?? null,
       data.stock_minimo ?? 0,
+      data.iva_alicuota ?? 21,
+      data.precio_usd ?? null,
       id
     ]
   )

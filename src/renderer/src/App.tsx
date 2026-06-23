@@ -8,6 +8,8 @@ import {
   Users,
   BarChart2,
   CreditCard,
+  Truck,
+  CheckSquare,
   LogOut,
   Loader2
 } from 'lucide-react'
@@ -19,9 +21,10 @@ import Caja from './pages/Caja'
 import Clientes from './pages/Clientes'
 import Reportes from './pages/Reportes'
 import CuentaCorriente from './pages/CuentaCorriente'
+import Proveedores from './pages/Proveedores'
+import ChequesCartera from './pages/ChequesCartera'
 import Login from './pages/Login'
-import Setup from './pages/Setup'
-import type { Usuario, DbStatus } from '../../preload'
+import type { Usuario } from '../../preload'
 
 type SeccionId =
   | 'ventas'
@@ -32,6 +35,8 @@ type SeccionId =
   | 'clientes'
   | 'caja'
   | 'reportes'
+  | 'proveedores'
+  | 'chequescartera'
 
 const NAV_VENDEDOR: { id: SeccionId; label: string; Icon: React.FC<{ size?: number; strokeWidth?: number }> }[] = [
   { id: 'ventas', label: 'Ventas', Icon: ShoppingCart },
@@ -39,12 +44,14 @@ const NAV_VENDEDOR: { id: SeccionId; label: string; Icon: React.FC<{ size?: numb
   { id: 'stock', label: 'Stock', Icon: Archive },
   { id: 'presupuestos', label: 'Presupuestos', Icon: FileText },
   { id: 'clientes', label: 'Clientes', Icon: Users },
-  { id: 'cuentacorriente', label: 'Cta. Corriente', Icon: CreditCard }
+  { id: 'cuentacorriente', label: 'Cta. Corriente', Icon: CreditCard },
+  { id: 'chequescartera', label: 'Cheques', Icon: CheckSquare }
 ]
 
 const NAV_ADMIN = [
   ...NAV_VENDEDOR,
   { id: 'caja' as SeccionId, label: 'Caja diaria', Icon: Wallet },
+  { id: 'proveedores' as SeccionId, label: 'Proveedores', Icon: Truck },
   { id: 'reportes' as SeccionId, label: 'Reportes', Icon: BarChart2 }
 ]
 
@@ -56,27 +63,29 @@ const PAGINAS: Record<SeccionId, () => JSX.Element> = {
   clientes: Clientes,
   cuentacorriente: CuentaCorriente,
   caja: Caja,
-  reportes: Reportes
+  reportes: Reportes,
+  proveedores: Proveedores,
+  chequescartera: ChequesCartera
 }
 
-type AppEstado = 'loading' | 'setup' | 'login' | 'app'
+type AppEstado = 'loading' | 'login' | 'app'
 
 function App(): JSX.Element {
   const [estado, setEstado] = useState<AppEstado>('loading')
   const [usuario, setUsuario] = useState<Usuario | null>(null)
-  const [dbStatus, setDbStatus] = useState<DbStatus | null>(null)
   const [seccion, setSeccion] = useState<SeccionId>('ventas')
 
   useEffect(() => {
     window.api.dbStatus().then((s) => {
-      setDbStatus(s)
-      if (s.needsSetup) {
-        setEstado('setup')
-      } else if (s.connected) {
+      if (s.connected) {
         setEstado('login')
       } else {
-        // Config existe pero no se pudo conectar (error en auto-connect)
-        setEstado('setup')
+        // Esperar y reintentar — la conexión puede tardar unos segundos
+        setTimeout(() => {
+          window.api.dbStatus().then((s2) => {
+            setEstado(s2.connected ? 'login' : 'login')
+          })
+        }, 3000)
       }
     })
   }, [])
@@ -103,15 +112,6 @@ function App(): JSX.Element {
     )
   }
 
-  if (estado === 'setup') {
-    return (
-      <Setup
-        errorInicial={dbStatus?.error ?? null}
-        onDone={() => setEstado('login')}
-      />
-    )
-  }
-
   if (estado === 'login') {
     return <Login onLogin={handleLogin} />
   }
@@ -121,9 +121,7 @@ function App(): JSX.Element {
 
   return (
     <div className="flex h-full bg-app font-sans">
-      {/* Sidebar */}
       <aside className="flex w-[200px] flex-shrink-0 flex-col bg-sidebar">
-        {/* Logo */}
         <div className="flex h-14 items-center px-5">
           <span className="text-[13px] font-bold tracking-[0.12em] text-white/90 uppercase">
             Pixel<span className="text-primary"> Gestión</span>
@@ -132,8 +130,7 @@ function App(): JSX.Element {
 
         <div className="mx-4 mb-3 h-px bg-white/[0.06]" />
 
-        {/* Nav */}
-        <nav className="flex-1 space-y-0.5 px-2">
+        <nav className="flex-1 space-y-0.5 overflow-y-auto px-2">
           {nav.map(({ id, label, Icon }) => {
             const activo = id === seccion
             return (
@@ -154,7 +151,6 @@ function App(): JSX.Element {
           })}
         </nav>
 
-        {/* Usuario / Logout */}
         <div className="border-t border-white/[0.06] px-3 py-3">
           <div className="mb-1 flex items-center justify-between px-1">
             <div>
@@ -172,7 +168,6 @@ function App(): JSX.Element {
         </div>
       </aside>
 
-      {/* Contenido */}
       <main className="flex min-w-0 flex-1 flex-col overflow-auto">
         <Pagina />
       </main>
