@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Fragment } from 'react'
 import { CreditCard, ChevronDown, ChevronUp } from 'lucide-react'
 import Page from '../components/Page'
 import { Button, TextInput, Field, Modal, Badge } from '../components/ui'
@@ -82,7 +82,7 @@ export default function CuentaCorriente(): JSX.Element {
           </thead>
           <tbody>
             {clientes.map((c) => (
-              <>
+              <Fragment key={c.id}>
                 <tr
                   key={c.id}
                   className="border-b border-line last:border-0 hover:bg-app cursor-pointer"
@@ -122,7 +122,7 @@ export default function CuentaCorriente(): JSX.Element {
                   <tr key={`${c.id}-ventas`} className="border-b border-line bg-app/50">
                     <td colSpan={5} className="px-6 pb-3 pt-2">
                       <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted">
-                        Historial de ventas
+                        Ventas pendientes de cobro
                       </p>
                       {(ventasMap[c.id] ?? []).length === 0 ? (
                         <p className="text-[12px] text-muted">Sin ventas registradas.</p>
@@ -146,7 +146,7 @@ export default function CuentaCorriente(): JSX.Element {
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             ))}
             {clientes.length === 0 && (
               <tr>

@@ -95,6 +95,9 @@ export async function registrarPagoProveedor(data: PagoProvInput): Promise<numbe
       )
     }
     if (data.chequeId) {
+      const cheque = await queryOne<{ estado: string }>('SELECT estado FROM cheques_cartera WHERE id = $1', [data.chequeId])
+      if (!cheque) throw new Error('Cheque no encontrado')
+      if (cheque.estado !== 'en_cartera') throw new Error('El cheque no está disponible en cartera')
       await run(
         `UPDATE cheques_cartera SET estado = 'entregado', destino_proveedor_id = $1 WHERE id = $2`,
         [data.proveedorId, data.chequeId]
@@ -115,11 +118,11 @@ export async function listarPagos(proveedorId: number) {
   )
 }
 
-export async function cargarFactura(proveedorId: number, total: number): Promise<void> {
+export async function cargarFactura(proveedorId: number, total: number, numero?: string | null): Promise<void> {
   await tx(async () => {
     const factId = await insert(
-      `INSERT INTO facturas_proveedor (proveedor_id, total, saldo) VALUES ($1,$2,$2)`,
-      [proveedorId, total]
+      `INSERT INTO facturas_proveedor (proveedor_id, numero, total, saldo) VALUES ($1,$2,$3,$3)`,
+      [proveedorId, numero ?? null, total]
     )
     await run(
       `UPDATE proveedores SET saldo_cta_cte = saldo_cta_cte + $1 WHERE id = $2`,

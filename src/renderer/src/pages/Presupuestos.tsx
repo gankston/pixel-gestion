@@ -73,17 +73,21 @@ export default function Presupuestos(): JSX.Element {
 
   async function guardar(): Promise<void> {
     if (carrito.length === 0) return
-    await window.api.crearPresupuesto({
-      clienteId,
-      lista: listaPrecio,
-      items: carrito.map((it) => ({
-        articuloId: it.art.id,
-        cantidad: it.cantidad,
-        precioUnit: precioDe(it.art, listaPrecio)
-      }))
-    })
-    setModal(false)
-    recargar()
+    try {
+      await window.api.crearPresupuesto({
+        clienteId,
+        lista: listaPrecio,
+        items: carrito.map((it) => ({
+          articuloId: it.art.id,
+          cantidad: it.cantidad,
+          precioUnit: precioDe(it.art, listaPrecio)
+        }))
+      })
+      setModal(false)
+      recargar()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo crear el presupuesto')
+    }
   }
 
   async function aprobar(id: number): Promise<void> {

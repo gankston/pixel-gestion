@@ -29,6 +29,7 @@ export default function ChequesCartera(): JSX.Element {
   const [modalNuevo, setModalNuevo] = useState(false)
   const [form, setForm] = useState<FormCheque>(FORM_VACIO)
   const [guardando, setGuardando] = useState(false)
+  const [errorCobro, setErrorCobro] = useState<string | null>(null)
 
   function recargar(): void {
     window.api.listCheques(filtro === 'todos' ? undefined : filtro).then(setCheques)
@@ -55,8 +56,13 @@ export default function ChequesCartera(): JSX.Element {
   }
 
   async function cobrar(id: number): Promise<void> {
-    await window.api.marcarChequeCobrado(id)
-    recargar()
+    setErrorCobro(null)
+    try {
+      await window.api.marcarChequeCobrado(id)
+      recargar()
+    } catch (e) {
+      setErrorCobro(e instanceof Error ? e.message : 'No se pudo marcar el cheque como cobrado')
+    }
   }
 
   const enCartera = cheques.filter((c) => c.estado === 'en_cartera')
@@ -91,6 +97,13 @@ export default function ChequesCartera(): JSX.Element {
           Registrar cheque
         </Button>
       </div>
+
+      {errorCobro && (
+        <div className="mb-3 flex items-center justify-between rounded border border-danger/30 bg-danger/8 px-4 py-2.5 text-[13px] text-danger">
+          <span>{errorCobro}</span>
+          <button onClick={() => setErrorCobro(null)} className="ml-3 text-danger/60 hover:text-danger">✕</button>
+        </div>
+      )}
 
       {enCartera.length > 0 && (
         <div className="mb-4 flex items-center justify-between rounded border border-line bg-panel px-4 py-3">

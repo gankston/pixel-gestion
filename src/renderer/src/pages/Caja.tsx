@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { LockOpen, Lock } from 'lucide-react'
 import Page from '../components/Page'
-import { Button, Badge } from '../components/ui'
+import { Button, Badge, Field, TextInput, Modal } from '../components/ui'
 import { money, fmtFecha } from '../lib/format'
 import type { CajaEstado } from '../../../preload'
 
@@ -33,17 +33,25 @@ function KpiCard({
 
 export default function Caja(): JSX.Element {
   const [estado, setEstado] = useState<CajaEstado | null>(null)
+  const [modalAbrir, setModalAbrir] = useState(false)
+  const [saldoInicial, setSaldoInicial] = useState('0')
+  const [abriendo, setAbriendo] = useState(false)
 
   function recargar(): void {
     window.api.estadoCaja().then(setEstado)
   }
   useEffect(recargar, [])
 
-  async function abrir(): Promise<void> {
-    const txt = prompt('Saldo inicial en efectivo:', '0')
-    if (txt == null) return
-    await window.api.abrirCaja(Number(txt) || 0)
-    recargar()
+  async function confirmarAbrir(): Promise<void> {
+    setAbriendo(true)
+    try {
+      await window.api.abrirCaja(Number(saldoInicial) || 0)
+      setModalAbrir(false)
+      setSaldoInicial('0')
+      recargar()
+    } finally {
+      setAbriendo(false)
+    }
   }
 
   async function cerrar(): Promise<void> {
@@ -60,7 +68,7 @@ export default function Caja(): JSX.Element {
       <Page
         titulo="Caja diaria"
         acciones={
-          <Button onClick={abrir}>
+          <Button onClick={() => { setSaldoInicial('0'); setModalAbrir(true) }}>
             <LockOpen size={14} />
             Abrir caja
           </Button>
@@ -71,6 +79,30 @@ export default function Caja(): JSX.Element {
           <p className="text-[13px] font-medium text-ink">No hay caja abierta</p>
           <p className="mt-1 text-[12px] text-muted">Abrí la caja para registrar ventas y cobros del día.</p>
         </div>
+
+        <Modal
+          open={modalAbrir}
+          title="Abrir caja del día"
+          onClose={() => setModalAbrir(false)}
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setModalAbrir(false)}>Cancelar</Button>
+              <Button onClick={confirmarAbrir} disabled={abriendo}>
+                {abriendo ? 'Abriendo...' : 'Abrir caja'}
+              </Button>
+            </>
+          }
+        >
+          <Field label="Saldo inicial en efectivo ($)">
+            <TextInput
+              type="number"
+              value={saldoInicial}
+              onChange={(e) => setSaldoInicial(e.target.value)}
+              autoFocus
+              placeholder="0"
+            />
+          </Field>
+        </Modal>
       </Page>
     )
   }

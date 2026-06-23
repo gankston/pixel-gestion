@@ -65,8 +65,8 @@ const api = {
     ipcRenderer.invoke('proveedores:actualizar', id, data),
   eliminarProveedor: (id: number) => ipcRenderer.invoke('proveedores:eliminar', id),
   facturasProveedor: (provId: number) => ipcRenderer.invoke('proveedores:facturas', provId),
-  cargarFacturaProveedor: (provId: number, total: number) =>
-    ipcRenderer.invoke('proveedores:cargarFactura', provId, total),
+  cargarFacturaProveedor: (provId: number, total: number, numero?: string) =>
+    ipcRenderer.invoke('proveedores:cargarFactura', provId, total, numero),
   pagarProveedor: (data: unknown) => ipcRenderer.invoke('proveedores:pago', data),
   pagosProveedor: (provId: number) => ipcRenderer.invoke('proveedores:pagos', provId),
 

@@ -79,8 +79,10 @@ export async function movimientosCaja(cajaId: number) {
 }
 
 export async function cerrarCaja(cajaId: number, saldoFinal: number): Promise<void> {
+  const caja = await queryOne<{ estado: string }>('SELECT estado FROM caja_diaria WHERE id = $1', [cajaId])
+  if (!caja || caja.estado !== 'abierta') throw new Error('La caja ya está cerrada o no existe')
   await run(
-    "UPDATE caja_diaria SET estado = 'cerrada', saldo_final = $1, cerrada_en = NOW() WHERE id = $2",
+    "UPDATE caja_diaria SET estado = 'cerrada', saldo_final = $1, cerrada_en = NOW() WHERE id = $2 AND estado = 'abierta'",
     [saldoFinal, cajaId]
   )
 }

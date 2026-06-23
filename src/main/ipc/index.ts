@@ -40,7 +40,11 @@ export function registerIpc(): void {
   // Auth
   ipcMain.handle('auth:usuarios', () => listarUsuarios())
   ipcMain.handle('auth:login', async (_e, nombre: string, password: string) => {
-    return login(nombre, password)
+    try {
+      return await login(nombre, password)
+    } catch (e) {
+      throw new Error(e instanceof Error ? e.message : 'Error al iniciar sesión')
+    }
   })
 
   // Articulos
@@ -107,7 +111,7 @@ export function registerIpc(): void {
   ipcMain.handle('proveedores:actualizar', (_e, id: number, data: proveedores.ProveedorInput) => proveedores.actualizarProveedor(id, data))
   ipcMain.handle('proveedores:eliminar', (_e, id: number) => proveedores.eliminarProveedor(id))
   ipcMain.handle('proveedores:facturas', (_e, provId: number) => proveedores.listarFacturas(provId))
-  ipcMain.handle('proveedores:cargarFactura', (_e, provId: number, total: number) => proveedores.cargarFactura(provId, total))
+  ipcMain.handle('proveedores:cargarFactura', (_e, provId: number, total: number, numero?: string) => proveedores.cargarFactura(provId, total, numero))
   ipcMain.handle('proveedores:pago', (_e, data: proveedores.PagoProvInput) => proveedores.registrarPagoProveedor(data))
   ipcMain.handle('proveedores:pagos', (_e, provId: number) => proveedores.listarPagos(provId))
 

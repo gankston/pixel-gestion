@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Fragment } from 'react'
 import { Plus, ChevronDown, ChevronUp, Pencil, Trash2, FileText, CreditCard } from 'lucide-react'
 import Page from '../components/Page'
 import { Button, TextInput, Field, Modal, Badge } from '../components/ui'
@@ -99,7 +99,7 @@ export default function Proveedores(): JSX.Element {
     if (monto <= 0) return
     setGuardando(true)
     try {
-      await window.api.cargarFacturaProveedor(modalFactura.id, monto)
+      await window.api.cargarFacturaProveedor(modalFactura.id, monto, numFactura.trim() || undefined)
       setModalFactura(null)
       setMontoFactura('')
       setNumFactura('')
@@ -186,7 +186,7 @@ export default function Proveedores(): JSX.Element {
           </thead>
           <tbody>
             {proveedores.map((p) => (
-              <>
+              <Fragment key={p.id}>
                 <tr
                   key={p.id}
                   className="cursor-pointer border-b border-line last:border-0 hover:bg-app"
@@ -274,7 +274,7 @@ export default function Proveedores(): JSX.Element {
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             ))}
             {proveedores.length === 0 && (
               <tr>

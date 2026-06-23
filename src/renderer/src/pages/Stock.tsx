@@ -28,7 +28,7 @@ export default function Stock(): JSX.Element {
 
   async function confirmar(): Promise<void> {
     if (!accion) return
-    const cant = Number(cantidad)
+    const cant = Math.round(Number(cantidad))
     if (!cant) return
     setGuardando(true)
     try {

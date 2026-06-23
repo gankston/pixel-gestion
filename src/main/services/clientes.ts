@@ -35,7 +35,15 @@ export async function actualizarCliente(id: number, data: ClienteInput): Promise
 
 export async function ventasCliente(clienteId: number) {
   return query(
-    'SELECT id, fecha::TEXT AS fecha, total FROM ventas WHERE cliente_id = $1 ORDER BY id DESC',
+    `SELECT v.id, v.fecha::TEXT AS fecha, v.total
+     FROM ventas v
+     WHERE v.cliente_id = $1
+       AND v.total > COALESCE(
+         (SELECT SUM(m.monto) FROM caja_movimientos m
+          WHERE m.referencia_tipo = 'venta' AND m.referencia_id = v.id AND m.tipo = 'ingreso'),
+         0
+       )
+     ORDER BY v.id DESC`,
     [clienteId]
   )
 }

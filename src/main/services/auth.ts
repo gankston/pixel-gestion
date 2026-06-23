@@ -27,6 +27,7 @@ export async function login(nombre: string, password: string): Promise<Usuario> 
     [nombre.trim()]
   )
   if (!row) throw new Error('Usuario no encontrado')
+  if (!row.password_hash) throw new Error('Error de configuración del usuario')
   const ok = await bcrypt.compare(password, row.password_hash)
   if (!ok) throw new Error('Contraseña incorrecta')
   return { id: row.id, nombre: row.nombre, perfil: row.perfil }
