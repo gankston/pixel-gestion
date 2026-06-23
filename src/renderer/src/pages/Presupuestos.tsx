@@ -217,7 +217,12 @@ export default function Presupuestos(): JSX.Element {
           <Field label="Cliente">
             <select
               value={clienteId ?? ''}
-              onChange={(e) => setClienteId(e.target.value ? Number(e.target.value) : null)}
+              onChange={(e) => {
+                const id = e.target.value ? Number(e.target.value) : null
+                setClienteId(id)
+                const c = clientes.find((x) => x.id === id)
+                if (c) setListaPrecio(c.tipo === 'mayorista' ? 'mayorista' : 'consumidor')
+              }}
               className="w-full rounded border border-line bg-panel px-3 py-[7px] text-[13px] outline-none focus:border-primary"
             >
               <option value="">Mostrador</option>

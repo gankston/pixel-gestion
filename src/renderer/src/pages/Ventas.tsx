@@ -170,7 +170,12 @@ export default function Ventas(): JSX.Element {
               <UserCircle size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
               <select
                 value={clienteId ?? ''}
-                onChange={(e) => setClienteId(e.target.value ? Number(e.target.value) : null)}
+                onChange={(e) => {
+                  const id = e.target.value ? Number(e.target.value) : null
+                  setClienteId(id)
+                  const c = clientes.find((x) => x.id === id)
+                  if (c) setLista(c.tipo === 'mayorista' ? 'mayorista' : 'consumidor')
+                }}
                 className="w-full rounded border border-line bg-panel py-[7px] pl-8 pr-3 text-[13px] text-ink outline-none focus:border-primary"
               >
                 <option value="">Mostrador</option>
