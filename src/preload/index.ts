@@ -82,7 +82,14 @@ const api = {
 
   // Impresion A4 y PDF
   imprimirHtml: (html: string) => ipcRenderer.invoke('print:html', html),
-  verPdf: (html: string) => ipcRenderer.invoke('print:pdf', html)
+  verPdf: (html: string) => ipcRenderer.invoke('print:pdf', html),
+
+  // Auto-update
+  onUpdateAvailable: (cb: (version: string) => void) =>
+    ipcRenderer.on('update:available', (_e, info) => cb(info.version)),
+  onUpdateReady: (cb: () => void) =>
+    ipcRenderer.on('update:ready', () => cb()),
+  installUpdate: () => ipcRenderer.send('update:install')
 }
 
 if (process.contextIsolated) {

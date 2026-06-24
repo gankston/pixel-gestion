@@ -1,6 +1,7 @@
-import { app, shell, BrowserWindow } from 'electron'
+import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { autoUpdater } from 'electron-updater'
 import { initDb } from './db'
 import { getConfig, saveConfig } from './config'
 import { registerIpc } from './ipc'
@@ -38,6 +39,29 @@ function createWindow(): void {
   }
 }
 
+function setupAutoUpdater(): void {
+  autoUpdater.autoDownload = true
+  autoUpdater.autoInstallOnAppQuit = true
+
+  autoUpdater.on('update-available', (info) => {
+    const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+    win?.webContents.send('update:available', { version: info.version })
+  })
+
+  autoUpdater.on('update-downloaded', () => {
+    const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+    win?.webContents.send('update:ready')
+  })
+
+  ipcMain.on('update:install', () => {
+    autoUpdater.quitAndInstall()
+  })
+
+  // Chequear al iniciar y luego cada 4 horas
+  setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 3000)
+  setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), 4 * 60 * 60 * 1000)
+}
+
 app.whenReady().then(async () => {
   electronApp.setAppUserModelId('com.pixelgestion.app')
 
@@ -57,6 +81,8 @@ app.whenReady().then(async () => {
   }
 
   createWindow()
+
+  if (!is.dev) setupAutoUpdater()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

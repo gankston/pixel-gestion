@@ -46,3 +46,9 @@ nsis:
 
   runAfterFinish: true
   deleteAppDataOnUninstall: false
+
+publish:
+  provider: github
+  owner: gankston
+  repo: pixel-gestion
+  private: true

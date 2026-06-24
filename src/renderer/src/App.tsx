@@ -70,11 +70,14 @@ const PAGINAS: Record<SeccionId, () => JSX.Element> = {
 }
 
 type AppEstado = 'loading' | 'login' | 'app'
+type UpdateEstado = 'idle' | 'available' | 'ready'
 
 function App(): JSX.Element {
   const [estado, setEstado] = useState<AppEstado>('loading')
   const [usuario, setUsuario] = useState<Usuario | null>(null)
   const [seccion, setSeccion] = useState<SeccionId>('ventas')
+  const [updateEstado, setUpdateEstado] = useState<UpdateEstado>('idle')
+  const [updateVersion, setUpdateVersion] = useState('')
 
   useEffect(() => {
     window.api.dbStatus().then((s) => {
@@ -86,6 +89,14 @@ function App(): JSX.Element {
       }
       tryLogin(true)
     })
+  }, [])
+
+  useEffect(() => {
+    window.api.onUpdateAvailable((version) => {
+      setUpdateVersion(version)
+      setUpdateEstado('available')
+    })
+    window.api.onUpdateReady(() => setUpdateEstado('ready'))
   }, [])
 
   function tryLogin(connected: boolean): void {
@@ -177,6 +188,23 @@ function App(): JSX.Element {
       </aside>
 
       <main className="flex min-w-0 flex-1 flex-col overflow-auto">
+        {updateEstado !== 'idle' && (
+          <div className="flex items-center justify-between gap-3 bg-primary/10 border-b border-primary/20 px-5 py-2">
+            <p className="text-[12px] text-primary">
+              {updateEstado === 'available'
+                ? `Nueva versión ${updateVersion} disponible — descargando...`
+                : 'Actualización lista para instalar'}
+            </p>
+            {updateEstado === 'ready' && (
+              <button
+                onClick={() => window.api.installUpdate()}
+                className="rounded bg-primary px-3 py-1 text-[11px] font-semibold text-white hover:opacity-90"
+              >
+                Instalar y reiniciar
+              </button>
+            )}
+          </div>
+        )}
         <Pagina />
       </main>
     </div>

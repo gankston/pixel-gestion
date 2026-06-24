@@ -20,6 +20,7 @@
     "@electron-toolkit/utils": "^3.0.0",
     "@fontsource/plus-jakarta-sans": "^5.2.8",
     "bcryptjs": "^3.0.3",
+    "electron-updater": "^6.8.9",
     "lucide-react": "^1.18.0",
     "pg": "^8.22.0",
     "sql.js": "^1.13.0"
