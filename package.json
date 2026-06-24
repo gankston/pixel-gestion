@@ -1,9 +1,10 @@
 {
   "name": "pixel-gestion",
-  "version": "0.0.1",
-  "description": "PIXEL GESTION - Sistema de ventas y stock",
+  "version": "1.0.0",
+  "description": "PIXEL GESTION - Sistema de ventas y stock para negocios",
   "main": "./out/main/index.js",
-  "author": "Gaston",
+  "author": "Gaston Orellana <pgastonor@gmail.com>",
+  "homepage": "https://pixelsoluciones.com.ar",
   "license": "UNLICENSED",
   "scripts": {
     "dev": "electron-vite dev",

@@ -1,22 +1,48 @@
-appId: com.pixelgestion.app
+appId: com.pixelsoluciones.pixelgestion
 productName: PIXEL GESTION
+copyright: Copyright © 2025 Gaston Orellana — PIXEL SOLUCIONES
+
 directories:
   buildResources: build
   output: C:\Users\Gaston\Desktop\PIXEL-GESTION-dist
+
 files:
+  - out/**/*
   - '!**/.vscode/*'
   - '!src/*'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml,bun.lockb}'
+  - '!{tsconfig.*,*.config.ts,*.config.js}'
+
 asarUnpack:
   - resources/**
   - '**/*.node'
+
 win:
+  icon: build/icon.ico
   target:
-    - nsis
+    - target: nsis
+      arch:
+        - x64
+  requestedExecutionLevel: asInvoker
+
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
-  artifactName: ${productName}-${version}-setup.${ext}
-  shortcutName: ${productName}
+  perMachine: false
+
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  menuCategory: PIXEL SOLUCIONES
+  shortcutName: PIXEL GESTION
+
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+
+  language: "11274"
+
+  artifactName: PIXEL-GESTION-v${version}-setup.${ext}
+
+  runAfterFinish: true
+  deleteAppDataOnUninstall: false
