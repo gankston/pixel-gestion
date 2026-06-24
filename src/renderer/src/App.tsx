@@ -23,8 +23,9 @@ import Reportes from './pages/Reportes'
 import CuentaCorriente from './pages/CuentaCorriente'
 import Proveedores from './pages/Proveedores'
 import ChequesCartera from './pages/ChequesCartera'
-import Login from './pages/Login'
+import Login, { getSavedSession, clearSavedSession } from './pages/Login'
 import type { Usuario } from '../../preload'
+import logoHorizontal from './assets/logo-horizontal.png'
 
 type SeccionId =
   | 'ventas'
@@ -77,18 +78,26 @@ function App(): JSX.Element {
 
   useEffect(() => {
     window.api.dbStatus().then((s) => {
-      if (s.connected) {
-        setEstado('login')
-      } else {
-        // Esperar y reintentar — la conexión puede tardar unos segundos
+      if (!s.connected) {
         setTimeout(() => {
-          window.api.dbStatus().then((s2) => {
-            setEstado(s2.connected ? 'login' : 'login')
-          })
+          window.api.dbStatus().then((s2) => tryLogin(s2.connected))
         }, 3000)
+        return
       }
+      tryLogin(true)
     })
   }, [])
+
+  function tryLogin(connected: boolean): void {
+    if (!connected) { setEstado('login'); return }
+    const saved = getSavedSession()
+    if (saved) {
+      setUsuario(saved)
+      setEstado('app')
+    } else {
+      setEstado('login')
+    }
+  }
 
   function handleLogin(u: Usuario): void {
     setUsuario(u)
@@ -97,6 +106,7 @@ function App(): JSX.Element {
   }
 
   function handleLogout(): void {
+    clearSavedSession()
     setUsuario(null)
     setEstado('login')
   }
@@ -123,9 +133,7 @@ function App(): JSX.Element {
     <div className="flex h-full bg-app font-sans">
       <aside className="flex w-[200px] flex-shrink-0 flex-col bg-sidebar">
         <div className="flex h-14 items-center px-5">
-          <span className="text-[13px] font-bold tracking-[0.12em] text-white/90 uppercase">
-            Pixel<span className="text-primary"> Gestión</span>
-          </span>
+          <img src={logoHorizontal} alt="Pixel Gestión" className="h-7 w-auto" />
         </div>
 
         <div className="mx-4 mb-3 h-px bg-white/[0.06]" />

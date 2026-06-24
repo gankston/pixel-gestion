@@ -1,6 +1,26 @@
 import { useState, useEffect, FormEvent } from 'react'
 import { Loader2, AlertCircle, ChevronLeft, ShieldCheck, User } from 'lucide-react'
 import type { Usuario } from '../../../preload'
+import logoHorizontal from '../assets/logo-horizontal.png'
+
+const SESSION_KEY = 'pg_session'
+
+export function getSavedSession(): Usuario | null {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY)
+    return raw ? (JSON.parse(raw) as Usuario) : null
+  } catch {
+    return null
+  }
+}
+
+export function clearSavedSession(): void {
+  localStorage.removeItem(SESSION_KEY)
+}
+
+function saveSession(u: Usuario): void {
+  localStorage.setItem(SESSION_KEY, JSON.stringify(u))
+}
 
 interface Props {
   onLogin: (usuario: Usuario) => void
@@ -10,6 +30,7 @@ export default function Login({ onLogin }: Props): JSX.Element {
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [seleccionado, setSeleccionado] = useState<Usuario | null>(null)
   const [password, setPassword] = useState('')
+  const [recordar, setRecordar] = useState(true)
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loadingUsers, setLoadingUsers] = useState(true)
@@ -39,6 +60,7 @@ export default function Login({ onLogin }: Props): JSX.Element {
     setError(null)
     try {
       const usuario = await window.api.login(seleccionado.nombre, password)
+      if (recordar) saveSession(usuario)
       onLogin(usuario)
     } catch (e: unknown) {
       const raw = e instanceof Error ? e.message : 'Contraseña incorrecta'
@@ -51,11 +73,9 @@ export default function Login({ onLogin }: Props): JSX.Element {
   return (
     <div className="flex h-full items-center justify-center bg-sidebar font-sans">
       <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <h1 className="text-[22px] font-bold tracking-tight text-white">
-            Pixel<span className="text-primary"> Gestión</span>
-          </h1>
-          <p className="mt-1 text-[13px] text-white/40">Sistema de ventas y stock</p>
+        <div className="mb-8 flex flex-col items-center">
+          <img src={logoHorizontal} alt="Pixel Gestión" className="h-12 w-auto" />
+          <p className="mt-2 text-[13px] text-white/40">Sistema de ventas y stock</p>
         </div>
 
         <div className="rounded-xl border border-white/[0.08] bg-white/[0.04] p-7">
@@ -144,6 +164,16 @@ export default function Login({ onLogin }: Props): JSX.Element {
                     <p className="text-[12px] text-danger">{error}</p>
                   </div>
                 )}
+
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={recordar}
+                    onChange={(e) => setRecordar(e.target.checked)}
+                    className="h-3.5 w-3.5 accent-primary"
+                  />
+                  <span className="text-[12px] text-white/40">Recordar mi sesión</span>
+                </label>
 
                 <button
                   type="submit"
