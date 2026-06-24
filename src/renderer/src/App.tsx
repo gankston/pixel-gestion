@@ -132,8 +132,8 @@ function App(): JSX.Element {
   return (
     <div className="flex h-full bg-app font-sans">
       <aside className="flex w-[200px] flex-shrink-0 flex-col bg-sidebar">
-        <div className="flex h-14 items-center px-5">
-          <img src={logoHorizontal} alt="Pixel Gestión" className="h-7 w-auto" />
+        <div className="flex h-20 items-center justify-center px-4">
+          <img src={logoHorizontal} alt="Pixel Gestión" className="h-16 w-auto" />
         </div>
 
         <div className="mx-4 mb-3 h-px bg-white/[0.06]" />

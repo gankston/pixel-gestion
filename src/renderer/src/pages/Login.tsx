@@ -74,7 +74,7 @@ export default function Login({ onLogin }: Props): JSX.Element {
     <div className="flex h-full items-center justify-center bg-sidebar font-sans">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center">
-          <img src={logoHorizontal} alt="Pixel Gestión" className="h-12 w-auto" />
+          <img src={logoHorizontal} alt="Pixel Gestión" className="h-28 w-auto" />
           <p className="mt-2 text-[13px] text-white/40">Sistema de ventas y stock</p>
         </div>
 
