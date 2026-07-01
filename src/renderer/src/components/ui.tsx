@@ -62,11 +62,11 @@ export function Modal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 p-4 backdrop-blur-[2px]"
-      onClick={onClose}
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
         className={`flex max-h-[88vh] flex-col rounded-lg border border-line bg-panel shadow-2xl ${wide ? 'w-full max-w-2xl' : 'w-full max-w-lg'}`}
-        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="flex flex-shrink-0 items-center justify-between border-b border-line px-5 py-3.5">
           <h2 className="text-[14px] font-semibold text-ink">{title}</h2>
