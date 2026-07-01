@@ -1,4 +1,5 @@
 import { query, queryOne, run, insert, tx } from '../db'
+import { asegurarCajaAbierta, registrarMovimientoCaja } from './caja'
 
 export interface ProveedorInput {
   nombre: string
@@ -83,6 +84,11 @@ export async function registrarPagoProveedor(data: PagoProvInput): Promise<numbe
     await run(
       `UPDATE proveedores SET saldo_cta_cte = saldo_cta_cte - $1 WHERE id = $2`,
       [data.monto, data.proveedorId]
+    )
+    const caja = await asegurarCajaAbierta()
+    await registrarMovimientoCaja(
+      caja.id, 'egreso', data.medioPago, data.monto,
+      'pago_proveedor', pagoId, `Pago prov. #${data.proveedorId}`
     )
     if (data.facturaId) {
       await run(

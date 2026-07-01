@@ -145,11 +145,12 @@ export default function Caja(): JSX.Element {
         </div>
       )}
 
-      <div className="mb-6 grid grid-cols-5 gap-3">
+      <div className="mb-6 grid grid-cols-6 gap-3">
         <KpiCard label="Efectivo" valor={resumen.efectivo} />
         <KpiCard label="Transferencia" valor={resumen.transferencia} />
         <KpiCard label="Débito" valor={resumen.debito} />
         <KpiCard label="Crédito" valor={resumen.credito} />
+        <KpiCard label="Cheque" valor={resumen.cheque} />
         <KpiCard label="Total" valor={resumen.total} destacado />
       </div>
 

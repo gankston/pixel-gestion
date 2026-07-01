@@ -84,8 +84,13 @@ export default function Articulos(): JSX.Element {
   }
   useEffect(recargar, [filtro])
 
+  function tipoCambioGuardado(): number | null {
+    const v = localStorage.getItem('pixel_tipo_cambio')
+    return v ? Number(v) : null
+  }
+
   function abrirNuevo(): void {
-    setForm({ ...vacio })
+    setForm({ ...vacio, tipo_cambio: tipoCambioGuardado() })
     setErrorGuardar(null)
   }
   function abrirEditar(a: ArticuloConPrecios): void {
@@ -110,7 +115,7 @@ export default function Articulos(): JSX.Element {
       stock_minimo: a.stock_minimo,
       iva_alicuota: a.iva_alicuota ?? 21,
       precio_usd: a.precio_usd ?? null,
-      tipo_cambio: null
+      tipo_cambio: tipoCambioGuardado()
     })
   }
 
@@ -148,6 +153,8 @@ export default function Articulos(): JSX.Element {
 
   function handleTipoCambio(valor: string): void {
     const tc = valor ? Number(valor) : null
+    if (tc) localStorage.setItem('pixel_tipo_cambio', String(tc))
+    else localStorage.removeItem('pixel_tipo_cambio')
     setForm((f) => {
       if (!f) return f
       const usd = f.precio_usd
