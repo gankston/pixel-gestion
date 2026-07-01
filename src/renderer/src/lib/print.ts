@@ -15,30 +15,31 @@ const ESTILOS = `
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #1B2733; }
   .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-  .brand-logo { height: 52px; display: block; }
-  .brand-addr { font-size: 8pt; color: #5B6878; margin-top: 4px; }
+  .brand-clip { width: 400px; height: 90px; overflow: hidden; position: relative; }
+  .brand-logo { position: absolute; width: 400px; height: auto; top: -233px; left: 0; }
+  .brand-addr { font-size: 8.5pt; color: #3A6000; margin-top: 2px; font-weight: 600; }
   .doc-meta { text-align: right; }
-  .doc-tipo { font-size: 14pt; font-weight: 700; color: #16202E; text-transform: uppercase; letter-spacing: 1px; }
+  .doc-tipo { font-size: 14pt; font-weight: 700; color: #2C5500; text-transform: uppercase; letter-spacing: 1px; }
   .doc-nro { font-size: 10pt; color: #5B6878; margin-top: 4px; }
   .doc-fecha { font-size: 9pt; color: #5B6878; margin-top: 2px; }
-  .divider { border: none; border-top: 2px solid #1F5FCC; margin: 14px 0; }
-  .cliente-box { background: #F4F5F7; border-radius: 4px; padding: 10px 14px; margin-bottom: 18px; font-size: 9pt; color: #5B6878; }
+  .divider { border: none; border-top: 3px solid #6AB800; margin: 14px 0; }
+  .cliente-box { background: #F2F7EC; border-left: 4px solid #6AB800; border-radius: 0 4px 4px 0; padding: 10px 14px; margin-bottom: 18px; font-size: 9pt; color: #5B6878; }
   .cliente-box strong { color: #1B2733; font-size: 10pt; display: block; margin-bottom: 2px; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 9.5pt; }
-  thead tr { background: #16202E; color: white; }
+  thead tr { background: #2C5500; color: white; }
   thead th { padding: 8px 10px; text-align: left; font-weight: 600; }
   thead th.r { text-align: right; }
-  tbody tr:nth-child(even) { background: #F8F9FA; }
-  tbody td { padding: 7px 10px; border-bottom: 1px solid #E2E5E9; }
+  tbody tr:nth-child(even) { background: #F5F9F0; }
+  tbody td { padding: 7px 10px; border-bottom: 1px solid #DDE8CC; }
   tbody td.r { text-align: right; font-variant-numeric: tabular-nums; }
-  tfoot tr { background: #1F5FCC; color: white; font-weight: 700; font-size: 11pt; }
+  tfoot tr { background: #6AB800; color: white; font-weight: 700; font-size: 11pt; }
   tfoot td { padding: 10px; }
   tfoot td.r { text-align: right; font-variant-numeric: tabular-nums; }
   .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 8pt; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-  .badge-vigente { background: #EBF2FF; color: #1F5FCC; }
+  .badge-vigente { background: #EBF5D6; color: #3A7000; }
   .badge-aprobado { background: #E6F4ED; color: #1E7E45; }
   .badge-anulado { background: #FDECEA; color: #C0392B; }
-  .footer { margin-top: 30px; padding-top: 12px; border-top: 1px solid #E2E5E9; font-size: 8pt; color: #5B6878; display: flex; justify-content: space-between; }
+  .footer { margin-top: 30px; padding-top: 12px; border-top: 2px solid #6AB800; font-size: 8pt; color: #5B6878; display: flex; justify-content: space-between; }
   .nota { margin-bottom: 6px; font-size: 8.5pt; color: #5B6878; }
 `
 
@@ -70,12 +71,14 @@ function buildHtml(
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>${titulo} ${nro}</title><style>${ESTILOS}</style></head><body>
   <div class="header">
     <div>
-      <img src="data:image/png;base64,${LOGO_ELECTRO_B64}" class="brand-logo" alt="Electro Soluciones" />
-      <div class="brand-addr">Av Guemes 290 Pichanal - Salta</div>
+      <div class="brand-clip">
+        <img src="data:image/png;base64,${LOGO_ELECTRO_B64}" class="brand-logo" alt="Electro Soluciones" />
+      </div>
+      <div class="brand-addr">Av G&#252;emes 290 Pichanal - Salta</div>
     </div>
     <div class="doc-meta">
       <div class="doc-tipo">${titulo}</div>
-      <div class="doc-nro">N° ${nro}</div>
+      <div class="doc-nro">N&#176; ${nro}</div>
       <div class="doc-fecha">${fecha}</div>
       ${extraBadge ? `<div style="margin-top:6px">${extraBadge}</div>` : ''}
     </div>
@@ -99,14 +102,14 @@ function buildHtml(
     </tr></tfoot>
   </table>
   <div class="footer">
-    <div>ELECTRO SOLUCIONES — Av Guemes 290 Pichanal - Salta</div>
+    <div>ELECTRO SOLUCIONES — Av Güemes 290 Pichanal - Salta</div>
     <div>Generado: ${new Date().toLocaleDateString('es-AR')}</div>
   </div>
   ${extraBody}
 </body></html>`
 }
 
-// -- Helpers internos para construir el HTML de cada tipo --
+// -- Helpers internos --
 
 function htmlVenta(det: DetalleVenta): string {
   return buildHtml(
