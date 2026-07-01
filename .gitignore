@@ -13,3 +13,7 @@ dist/
 # Variables de entorno
 .env
 .env.local
+.gstack/
+.agents/
+skills-lock.json
+nul
