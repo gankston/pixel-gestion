@@ -6,8 +6,8 @@
  *     × (1-d1/100) × (1-d2/100) × (1-d3/100) × (1-d4/100) × (1-d5/100)
  *     = costo
  *   costo × (1 + ganancia/100)  = base
- *   base × (1 + descuentoMayor/100)   = mayorista
- *   base × (1 + descuentoMostrador/100) = mostrador (consumidor)
+ *   base × (1 - descuentoMayor/100)   = mayorista   (descuento = baja precio)
+ *   base × (1 - descuentoMostrador/100) = mostrador (consumidor)
  *   REDONDEO: siempre hacia arriba al entero.
  *   Si el articulo esta en oferta, el precio de oferta pisa al calculado.
  */
@@ -68,8 +68,8 @@ export function calcularPrecios(art: ArticuloPrecio): PreciosCalculados {
   return {
     netoFinal: costo,
     base,
-    mayorista: redondearHaciaArriba(base * (1 + descMayor / 100)),
-    consumidor: redondearHaciaArriba(base * (1 + descMostrador / 100))
+    mayorista: redondearHaciaArriba(base * (1 - descMayor / 100)),
+    consumidor: redondearHaciaArriba(base * (1 - descMostrador / 100))
   }
 }
 

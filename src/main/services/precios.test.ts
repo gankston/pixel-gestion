@@ -37,24 +37,21 @@ describe('calcularCosto — cascada de descuentos', () => {
   })
 })
 
-describe('calcularPrecios — precio mayorista (+10% default)', () => {
-  it('lista 100 sin descuentos, sin ganancia -> mayorista 110', () => {
-    expect(calcularPrecios({ neto: 100, descuentoPct: 0 }).mayorista).toBe(110)
+describe('calcularPrecios — precio mayorista (desc -10% default)', () => {
+  it('lista 100 sin descuentos, sin ganancia -> mayorista 90', () => {
+    expect(calcularPrecios({ neto: 100, descuentoPct: 0 }).mayorista).toBe(90)
   })
-  it('lista 100 con desc1=10% -> costo 90 -> mayorista 99', () => {
-    expect(calcularPrecios({ neto: 100, descuentoPct: 10 }).mayorista).toBe(99)
+  it('lista 100 con desc1=10% -> costo 90, mayorista 81', () => {
+    expect(calcularPrecios({ neto: 100, descuentoPct: 10 }).mayorista).toBe(81)
   })
-  it('lista 100 con ganancia=20% -> base 120 -> mayorista 132', () => {
-    expect(calcularPrecios({ neto: 100, descuentoPct: 0, gananciaPct: 20 }).mayorista).toBe(132)
+  it('lista 100 con ganancia=20% -> base 120 -> mayorista 108', () => {
+    expect(calcularPrecios({ neto: 100, descuentoPct: 0, gananciaPct: 20 }).mayorista).toBe(108)
   })
 })
 
-describe('calcularPrecios — precio consumidor (+60% default)', () => {
-  it('lista 100 sin descuentos -> consumidor 160', () => {
-    expect(calcularPrecios({ neto: 100, descuentoPct: 0 }).consumidor).toBe(160)
-  })
-  it('lista 84,70 sin descuentos -> consumidor 136', () => {
-    expect(calcularPrecios({ neto: 84.7, descuentoPct: 0 }).consumidor).toBe(136)
+describe('calcularPrecios — precio consumidor (desc -60% default)', () => {
+  it('lista 100 sin descuentos -> consumidor 40', () => {
+    expect(calcularPrecios({ neto: 100, descuentoPct: 0 }).consumidor).toBe(40)
   })
 })
 

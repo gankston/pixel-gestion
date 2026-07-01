@@ -50,14 +50,27 @@ const vacio: Form = {
   tipo_cambio: null
 }
 
-function calcularCostoPreview(f: Form): number {
-  return f.neto
+interface PreciosPreview {
+  costo: number
+  precioFinal: number
+  mayorista: number
+  mostrador: number
+}
+
+function calcularPreciosPreview(f: Form): PreciosPreview {
+  const costo = f.neto
     * (1 - f.descuento_pct / 100)
     * (1 - f.desc2_pct / 100)
     * (1 - f.desc3_pct / 100)
     * (1 - f.desc4_pct / 100)
     * (1 - f.desc5_pct / 100)
+  const precioFinal = costo * (1 + f.ganancia_pct / 100)
+  const mayorista = Math.ceil(precioFinal * (1 - f.markup_mayorista_pct / 100) * 1e6) / 1e6
+  const mostrador = Math.ceil(precioFinal * (1 - f.markup_consumidor_pct / 100) * 1e6) / 1e6
+  return { costo, precioFinal, mayorista: Math.ceil(mayorista), mostrador: Math.ceil(mostrador) }
 }
+
+const fmt = (n: number) => n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 export default function Articulos(): JSX.Element {
   const [articulos, setArticulos] = useState<ArticuloConPrecios[]>([])
@@ -185,8 +198,9 @@ export default function Articulos(): JSX.Element {
               <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Código</th>
               <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Artículo</th>
               <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted">Disponible</th>
-              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted">Mayor</th>
-              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted">Mostrador</th>
+              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted">Precio final</th>
+              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted">Desc. mayor</th>
+              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted">Desc. mostrador</th>
               <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Estado</th>
               <th className="px-4 py-2.5" />
             </tr>
@@ -207,10 +221,13 @@ export default function Articulos(): JSX.Element {
                       <span className="ml-1 text-[11px] text-muted">({a.stock_reservado} res.)</span>
                     )}
                   </td>
-                  <td className="px-4 py-2.5 text-right font-mono text-[13px]">
+                  <td className="px-4 py-2.5 text-right font-mono text-[13px] font-semibold text-ink">
+                    {a.en_oferta && a.precio_oferta != null ? money(a.precio_oferta) : money(a.precios.base)}
+                  </td>
+                  <td className="px-4 py-2.5 text-right font-mono text-[13px] text-muted">
                     {a.en_oferta && a.precio_oferta != null ? money(a.precio_oferta) : money(a.precios.mayorista)}
                   </td>
-                  <td className="px-4 py-2.5 text-right font-mono text-[13px]">
+                  <td className="px-4 py-2.5 text-right font-mono text-[13px] text-muted">
                     {a.en_oferta && a.precio_oferta != null ? money(a.precio_oferta) : money(a.precios.consumidor)}
                   </td>
                   <td className="px-4 py-2.5">
@@ -242,7 +259,7 @@ export default function Articulos(): JSX.Element {
             })}
             {articulos.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-muted">
+                <td colSpan={8} className="px-4 py-10 text-center text-muted">
                   Sin artículos.
                 </td>
               </tr>
@@ -363,7 +380,7 @@ export default function Articulos(): JSX.Element {
                 </Field>
                 <div className="col-span-2">
                   <p className="text-[11px] text-muted">
-                    Costo tras descuentos: <span className="font-semibold text-ink">${calcularCostoPreview(form).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                    Costo tras descuentos: <span className="font-semibold text-ink">${fmt(calcularPreciosPreview(form).costo)}</span>
                   </p>
                 </div>
               </div>
@@ -385,6 +402,26 @@ export default function Articulos(): JSX.Element {
                   <TextInput type="number" value={form.markup_consumidor_pct} onChange={(e) => set('markup_consumidor_pct', Number(e.target.value))} />
                 </Field>
               </div>
+              {/* Preview de precios calculados */}
+              {(() => {
+                const p = calcularPreciosPreview(form)
+                return (
+                  <div className="mt-3 grid grid-cols-3 gap-2 rounded border border-primary/20 bg-primary/5 px-3 py-2.5">
+                    <div className="text-center">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">Precio final</p>
+                      <p className="mt-0.5 font-mono text-[15px] font-bold text-ink">${fmt(p.precioFinal)}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">Desc. mayor</p>
+                      <p className="mt-0.5 font-mono text-[15px] font-semibold text-primary">${fmt(p.mayorista)}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">Desc. mostrador</p>
+                      <p className="mt-0.5 font-mono text-[15px] font-semibold text-primary">${fmt(p.mostrador)}</p>
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
 
             {/* Oferta */}
