@@ -1,4 +1,5 @@
-import type { DetalleVenta, DetallePresupuesto } from '../../../preload'
+﻿import type { DetalleVenta, DetallePresupuesto } from '../../../preload'
+import { LOGO_ELECTRO_B64 } from './logo-b64'
 
 function fmt(n: number): string {
   return '$ ' + Math.round(n).toLocaleString('es-AR')
@@ -14,9 +15,8 @@ const ESTILOS = `
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #1B2733; }
   .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-  .brand { font-size: 22pt; font-weight: 700; letter-spacing: -1px; color: #16202E; }
-  .brand span { color: #1F5FCC; }
-  .brand-sub { font-size: 8pt; color: #5B6878; margin-top: 2px; }
+  .brand-logo { height: 52px; display: block; }
+  .brand-addr { font-size: 8pt; color: #5B6878; margin-top: 4px; }
   .doc-meta { text-align: right; }
   .doc-tipo { font-size: 14pt; font-weight: 700; color: #16202E; text-transform: uppercase; letter-spacing: 1px; }
   .doc-nro { font-size: 10pt; color: #5B6878; margin-top: 4px; }
@@ -70,8 +70,8 @@ function buildHtml(
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>${titulo} ${nro}</title><style>${ESTILOS}</style></head><body>
   <div class="header">
     <div>
-      <div class="brand">PIXEL <span>GESTION</span></div>
-      <div class="brand-sub">Sistema de gestion comercial</div>
+      <img src="data:image/png;base64,${LOGO_ELECTRO_B64}" class="brand-logo" alt="Electro Soluciones" />
+      <div class="brand-addr">Av Guemes 290 Pichanal - Salta</div>
     </div>
     <div class="doc-meta">
       <div class="doc-tipo">${titulo}</div>
@@ -99,14 +99,14 @@ function buildHtml(
     </tr></tfoot>
   </table>
   <div class="footer">
-    <div>PIXEL GESTION — Sistema de gestion comercial</div>
+    <div>ELECTRO SOLUCIONES — Av Guemes 290 Pichanal - Salta</div>
     <div>Generado: ${new Date().toLocaleDateString('es-AR')}</div>
   </div>
   ${extraBody}
 </body></html>`
 }
 
-// ── Helpers internos para construir el HTML de cada tipo ──
+// -- Helpers internos para construir el HTML de cada tipo --
 
 function htmlVenta(det: DetalleVenta): string {
   return buildHtml(
@@ -138,7 +138,7 @@ function htmlPresupuesto(det: DetallePresupuesto): string {
   )
 }
 
-// ── API pública ──
+// -- API publica --
 
 export const imprimirVenta = (det: DetalleVenta): Promise<void> =>
   window.api.imprimirHtml(htmlVenta(det))
