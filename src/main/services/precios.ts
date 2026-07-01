@@ -1,75 +1,78 @@
 /**
  * Motor de precios de PIXEL GESTION.
  *
- * Regla de negocio (confirmada con el cliente):
- *   neto final   = neto - descuento%
- *   mayorista    = neto final + markup mayorista (default +10%)
- *   consumidor   = neto final + markup consumidor (default +60%)
- *   REDONDEO: siempre hacia arriba al entero (techo). 100,50 -> 101 ; 100,01 -> 101
+ * Flujo:
+ *   precio_lista
+ *     × (1-d1/100) × (1-d2/100) × (1-d3/100) × (1-d4/100) × (1-d5/100)
+ *     = costo
+ *   costo × (1 + ganancia/100)  = base
+ *   base × (1 + descuentoMayor/100)   = mayorista
+ *   base × (1 + descuentoMostrador/100) = mostrador (consumidor)
+ *   REDONDEO: siempre hacia arriba al entero.
  *   Si el articulo esta en oferta, el precio de oferta pisa al calculado.
  */
 
-export const MARKUP_MAYORISTA_DEFAULT = 10
-export const MARKUP_CONSUMIDOR_DEFAULT = 60
+export const DESCUENTO_MAYOR_DEFAULT = 10
+export const DESCUENTO_MOSTRADOR_DEFAULT = 60
 
 export interface ArticuloPrecio {
-  neto: number
-  descuentoPct: number
-  markupMayoristaPct?: number
-  markupConsumidorPct?: number
+  neto: number             // precio de lista
+  descuentoPct: number     // d1
+  desc2Pct?: number
+  desc3Pct?: number
+  desc4Pct?: number
+  desc5Pct?: number
+  gananciaPct?: number
+  markupMayoristaPct?: number   // descuento por mayor
+  markupConsumidorPct?: number  // descuento mostrador
   enOferta?: boolean
   precioOferta?: number | null
 }
 
 export interface PreciosCalculados {
-  netoFinal: number
+  netoFinal: number   // costo tras cascada de descuentos
+  base: number        // costo + ganancia
   mayorista: number
   consumidor: number
 }
 
-/**
- * Redondeo SIEMPRE hacia arriba al entero.
- * El toFixed(6) elimina el ruido de coma flotante (ej: 110.00000000000001)
- * antes de aplicar el techo, para que 100 * 1.1 de 110 y no 111.
- */
 export function redondearHaciaArriba(valor: number): number {
   return Math.ceil(Number(valor.toFixed(6)))
 }
 
-export function calcularNetoFinal(neto: number, descuentoPct: number): number {
-  return neto * (1 - descuentoPct / 100)
-}
-
-export function calcularPrecioMayorista(
-  neto: number,
-  descuentoPct: number,
-  markupPct: number = MARKUP_MAYORISTA_DEFAULT
+export function calcularCosto(
+  precioLista: number,
+  d1: number, d2 = 0, d3 = 0, d4 = 0, d5 = 0
 ): number {
-  const base = calcularNetoFinal(neto, descuentoPct)
-  return redondearHaciaArriba(base * (1 + markupPct / 100))
+  return precioLista
+    * (1 - d1 / 100)
+    * (1 - d2 / 100)
+    * (1 - d3 / 100)
+    * (1 - d4 / 100)
+    * (1 - d5 / 100)
 }
 
-export function calcularPrecioConsumidor(
-  neto: number,
-  descuentoPct: number,
-  markupPct: number = MARKUP_CONSUMIDOR_DEFAULT
-): number {
-  const base = calcularNetoFinal(neto, descuentoPct)
-  return redondearHaciaArriba(base * (1 + markupPct / 100))
-}
-
-/** Calcula ambas listas de precio para un articulo. */
 export function calcularPrecios(art: ArticuloPrecio): PreciosCalculados {
-  const markupMay = art.markupMayoristaPct ?? MARKUP_MAYORISTA_DEFAULT
-  const markupCon = art.markupConsumidorPct ?? MARKUP_CONSUMIDOR_DEFAULT
+  const costo = calcularCosto(
+    art.neto,
+    art.descuentoPct,
+    art.desc2Pct ?? 0,
+    art.desc3Pct ?? 0,
+    art.desc4Pct ?? 0,
+    art.desc5Pct ?? 0
+  )
+  const ganancia = art.gananciaPct ?? 0
+  const base = costo * (1 + ganancia / 100)
+  const descMayor = art.markupMayoristaPct ?? DESCUENTO_MAYOR_DEFAULT
+  const descMostrador = art.markupConsumidorPct ?? DESCUENTO_MOSTRADOR_DEFAULT
   return {
-    netoFinal: calcularNetoFinal(art.neto, art.descuentoPct),
-    mayorista: calcularPrecioMayorista(art.neto, art.descuentoPct, markupMay),
-    consumidor: calcularPrecioConsumidor(art.neto, art.descuentoPct, markupCon)
+    netoFinal: costo,
+    base,
+    mayorista: redondearHaciaArriba(base * (1 + descMayor / 100)),
+    consumidor: redondearHaciaArriba(base * (1 + descMostrador / 100))
   }
 }
 
-/** Precio final de venta segun la lista y si esta en oferta. */
 export function precioVenta(
   art: ArticuloPrecio,
   lista: 'mayorista' | 'consumidor'
@@ -80,3 +83,6 @@ export function precioVenta(
   const p = calcularPrecios(art)
   return lista === 'mayorista' ? p.mayorista : p.consumidor
 }
+
+// Aliases para compatibilidad
+export const calcularNetoFinal = (neto: number, d1: number) => calcularCosto(neto, d1)

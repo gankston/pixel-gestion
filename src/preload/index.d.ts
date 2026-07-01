@@ -14,6 +14,7 @@ export interface DbStatus {
 
 export interface PreciosCalculados {
   netoFinal: number
+  base: number
   mayorista: number
   consumidor: number
 }
@@ -25,6 +26,11 @@ export interface ArticuloConPrecios {
   rubro: string | null
   neto: number
   descuento_pct: number
+  desc2_pct: number
+  desc3_pct: number
+  desc4_pct: number
+  desc5_pct: number
+  ganancia_pct: number
   markup_mayorista_pct: number
   markup_consumidor_pct: number
   en_oferta: number

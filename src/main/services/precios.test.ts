@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   redondearHaciaArriba,
   calcularNetoFinal,
-  calcularPrecioMayorista,
-  calcularPrecioConsumidor,
+  calcularCosto,
+  calcularPrecios,
   precioVenta
 } from './precios'
 
@@ -22,30 +22,39 @@ describe('redondeo hacia arriba (techo)', () => {
   })
 })
 
-describe('neto final con descuento', () => {
-  it('neto 100 con 10% de descuento -> 90', () => {
+describe('calcularCosto — cascada de descuentos', () => {
+  it('100 con 10% de desc1 -> 90', () => {
     expect(calcularNetoFinal(100, 10)).toBeCloseTo(90)
   })
-  it('neto 100 sin descuento -> 100', () => {
-    expect(calcularNetoFinal(100, 0)).toBe(100)
+  it('100 sin descuentos -> 100', () => {
+    expect(calcularCosto(100, 0)).toBe(100)
+  })
+  it('100 con 10%+10% en cascada -> 81', () => {
+    expect(calcularCosto(100, 10, 10)).toBeCloseTo(81)
+  })
+  it('100 con 5 descuentos del 0% -> 100', () => {
+    expect(calcularCosto(100, 0, 0, 0, 0, 0)).toBe(100)
   })
 })
 
-describe('precio mayorista (+10% por default)', () => {
-  it('neto 100 sin descuento -> 110', () => {
-    expect(calcularPrecioMayorista(100, 0)).toBe(110)
+describe('calcularPrecios — precio mayorista (+10% default)', () => {
+  it('lista 100 sin descuentos, sin ganancia -> mayorista 110', () => {
+    expect(calcularPrecios({ neto: 100, descuentoPct: 0 }).mayorista).toBe(110)
   })
-  it('neto 100 con 10% descuento (=90) +10% -> 99', () => {
-    expect(calcularPrecioMayorista(100, 10)).toBe(99)
+  it('lista 100 con desc1=10% -> costo 90 -> mayorista 99', () => {
+    expect(calcularPrecios({ neto: 100, descuentoPct: 10 }).mayorista).toBe(99)
+  })
+  it('lista 100 con ganancia=20% -> base 120 -> mayorista 132', () => {
+    expect(calcularPrecios({ neto: 100, descuentoPct: 0, gananciaPct: 20 }).mayorista).toBe(132)
   })
 })
 
-describe('precio consumidor final (+60% por default)', () => {
-  it('neto 100 sin descuento -> 160', () => {
-    expect(calcularPrecioConsumidor(100, 0)).toBe(160)
+describe('calcularPrecios — precio consumidor (+60% default)', () => {
+  it('lista 100 sin descuentos -> consumidor 160', () => {
+    expect(calcularPrecios({ neto: 100, descuentoPct: 0 }).consumidor).toBe(160)
   })
-  it('neto 84,70 sin descuento -> 136 (135,52 redondea arriba)', () => {
-    expect(calcularPrecioConsumidor(84.7, 0)).toBe(136)
+  it('lista 84,70 sin descuentos -> consumidor 136', () => {
+    expect(calcularPrecios({ neto: 84.7, descuentoPct: 0 }).consumidor).toBe(136)
   })
 })
 

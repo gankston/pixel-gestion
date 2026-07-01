@@ -12,6 +12,11 @@ interface Form {
   rubro: string
   neto: number
   descuento_pct: number
+  desc2_pct: number
+  desc3_pct: number
+  desc4_pct: number
+  desc5_pct: number
+  ganancia_pct: number
   markup_mayorista_pct: number
   markup_consumidor_pct: number
   en_oferta: boolean
@@ -20,6 +25,7 @@ interface Form {
   stock_minimo: number
   iva_alicuota: number
   precio_usd: number | null
+  tipo_cambio: number | null
 }
 
 const vacio: Form = {
@@ -28,6 +34,11 @@ const vacio: Form = {
   rubro: '',
   neto: 0,
   descuento_pct: 0,
+  desc2_pct: 0,
+  desc3_pct: 0,
+  desc4_pct: 0,
+  desc5_pct: 0,
+  ganancia_pct: 0,
   markup_mayorista_pct: 10,
   markup_consumidor_pct: 60,
   en_oferta: false,
@@ -35,7 +46,17 @@ const vacio: Form = {
   stock_fisico: 0,
   stock_minimo: 0,
   iva_alicuota: 21,
-  precio_usd: null
+  precio_usd: null,
+  tipo_cambio: null
+}
+
+function calcularCostoPreview(f: Form): number {
+  return f.neto
+    * (1 - f.descuento_pct / 100)
+    * (1 - f.desc2_pct / 100)
+    * (1 - f.desc3_pct / 100)
+    * (1 - f.desc4_pct / 100)
+    * (1 - f.desc5_pct / 100)
 }
 
 export default function Articulos(): JSX.Element {
@@ -63,6 +84,11 @@ export default function Articulos(): JSX.Element {
       rubro: a.rubro ?? '',
       neto: a.neto,
       descuento_pct: a.descuento_pct,
+      desc2_pct: a.desc2_pct ?? 0,
+      desc3_pct: a.desc3_pct ?? 0,
+      desc4_pct: a.desc4_pct ?? 0,
+      desc5_pct: a.desc5_pct ?? 0,
+      ganancia_pct: a.ganancia_pct ?? 0,
       markup_mayorista_pct: a.markup_mayorista_pct,
       markup_consumidor_pct: a.markup_consumidor_pct,
       en_oferta: a.en_oferta === 1,
@@ -70,7 +96,8 @@ export default function Articulos(): JSX.Element {
       stock_fisico: a.stock_fisico,
       stock_minimo: a.stock_minimo,
       iva_alicuota: a.iva_alicuota ?? 21,
-      precio_usd: a.precio_usd ?? null
+      precio_usd: a.precio_usd ?? null,
+      tipo_cambio: null
     })
   }
 
@@ -83,7 +110,10 @@ export default function Articulos(): JSX.Element {
       setForm(null)
       recargar()
     } catch (e) {
-      setErrorGuardar((e instanceof Error ? e.message : 'No se pudo guardar el artículo').replace(/^Error invoking remote method '[^']+': Error: /, ''))
+      setErrorGuardar(
+        (e instanceof Error ? e.message : 'No se pudo guardar el artículo')
+          .replace(/^Error invoking remote method '[^']+': Error: /, '')
+      )
     }
   }
 
@@ -93,12 +123,35 @@ export default function Articulos(): JSX.Element {
       await window.api.eliminarArticulo(a.id)
       recargar()
     } catch (e) {
-      setErrorEliminar((e instanceof Error ? e.message : 'No se pudo eliminar el artículo').replace(/^Error invoking remote method '[^']+': Error: /, ''))
+      setErrorEliminar(
+        (e instanceof Error ? e.message : 'No se pudo eliminar el artículo')
+          .replace(/^Error invoking remote method '[^']+': Error: /, '')
+      )
     }
   }
 
   const set = (campo: keyof Form, valor: unknown): void =>
     setForm((f) => (f ? { ...f, [campo]: valor } : f))
+
+  function handleTipoCambio(valor: string): void {
+    const tc = valor ? Number(valor) : null
+    setForm((f) => {
+      if (!f) return f
+      const usd = f.precio_usd
+      const neto = tc && usd ? usd * tc : f.neto
+      return { ...f, tipo_cambio: tc, neto: tc && usd ? neto : f.neto }
+    })
+  }
+
+  function handlePrecioUsd(valor: string): void {
+    const usd = valor ? Number(valor) : null
+    setForm((f) => {
+      if (!f) return f
+      const tc = f.tipo_cambio
+      const neto = tc && usd ? usd * tc : f.neto
+      return { ...f, precio_usd: usd, neto: tc && usd ? neto : f.neto }
+    })
+  }
 
   return (
     <Page
@@ -132,8 +185,8 @@ export default function Articulos(): JSX.Element {
               <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Código</th>
               <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Artículo</th>
               <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted">Disponible</th>
-              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted">Mayorista</th>
-              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted">Consumidor</th>
+              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted">Mayor</th>
+              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted">Mostrador</th>
               <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Estado</th>
               <th className="px-4 py-2.5" />
             </tr>
@@ -216,59 +269,126 @@ export default function Articulos(): JSX.Element {
           </div>
         )}
         {form && (
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Nombre">
-              <TextInput value={form.nombre} onChange={(e) => set('nombre', e.target.value)} />
-            </Field>
-            <Field label="Código de barras">
-              <TextInput value={form.codigo_barras} onChange={(e) => set('codigo_barras', e.target.value)} />
-            </Field>
-            <Field label="Rubro">
-              <TextInput value={form.rubro} onChange={(e) => set('rubro', e.target.value)} />
-            </Field>
-            <Field label="Neto ($)">
-              <TextInput type="number" value={form.neto} onChange={(e) => set('neto', Number(e.target.value))} />
-              {form.neto === 0 && (
-                <p className="mt-1 text-[11px] text-warn">Neto $0 — los precios de venta serán $0.</p>
-              )}
-            </Field>
-            <Field label="Descuento (%)">
-              <TextInput type="number" value={form.descuento_pct} onChange={(e) => set('descuento_pct', Number(e.target.value))} />
-            </Field>
-            <Field label="Stock mínimo">
-              <TextInput type="number" value={form.stock_minimo} onChange={(e) => set('stock_minimo', Number(e.target.value))} />
-            </Field>
-            <Field label="Ganancia mayorista (%)">
-              <TextInput type="number" value={form.markup_mayorista_pct} onChange={(e) => set('markup_mayorista_pct', Number(e.target.value))} />
-            </Field>
-            <Field label="Ganancia consumidor (%)">
-              <TextInput type="number" value={form.markup_consumidor_pct} onChange={(e) => set('markup_consumidor_pct', Number(e.target.value))} />
-            </Field>
-            {!form.id && (
-              <Field label="Stock inicial">
-                <TextInput type="number" value={form.stock_fisico} onChange={(e) => set('stock_fisico', Number(e.target.value))} />
+          <div className="space-y-4">
+            {/* Datos del artículo */}
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Nombre">
+                <TextInput value={form.nombre} onChange={(e) => set('nombre', e.target.value)} />
               </Field>
-            )}
-            <Field label="IVA">
-              <select
-                value={form.iva_alicuota}
-                onChange={(e) => set('iva_alicuota', Number(e.target.value))}
-                className="w-full rounded border border-line bg-panel px-3 py-[7px] text-[13px] outline-none focus:border-primary"
-              >
-                <option value={21}>21%</option>
-                <option value={10.5}>10.5%</option>
-                <option value={0}>Exento (0%)</option>
-              </select>
-            </Field>
-            <Field label="Precio USD (opcional)">
-              <TextInput
-                type="number"
-                value={form.precio_usd ?? ''}
-                onChange={(e) => set('precio_usd', e.target.value ? Number(e.target.value) : null)}
-                placeholder="0.00"
-              />
-            </Field>
-            <div className="col-span-2 flex items-center gap-3 rounded border border-line bg-app p-3">
+              <Field label="Código de barras">
+                <TextInput value={form.codigo_barras} onChange={(e) => set('codigo_barras', e.target.value)} />
+              </Field>
+              <Field label="Rubro">
+                <TextInput value={form.rubro} onChange={(e) => set('rubro', e.target.value)} />
+              </Field>
+              <Field label="Stock mínimo">
+                <TextInput type="number" value={form.stock_minimo} onChange={(e) => set('stock_minimo', Number(e.target.value))} />
+              </Field>
+              {!form.id && (
+                <Field label="Stock inicial">
+                  <TextInput type="number" value={form.stock_fisico} onChange={(e) => set('stock_fisico', Number(e.target.value))} />
+                </Field>
+              )}
+              <Field label="IVA">
+                <select
+                  value={form.iva_alicuota}
+                  onChange={(e) => set('iva_alicuota', Number(e.target.value))}
+                  className="w-full rounded border border-line bg-panel px-3 py-[7px] text-[13px] outline-none focus:border-primary"
+                >
+                  <option value={21}>21%</option>
+                  <option value={10.5}>10.5%</option>
+                  <option value={0}>Exento (0%)</option>
+                </select>
+              </Field>
+            </div>
+
+            {/* Tipo de cambio dólar */}
+            <div className="rounded border border-line bg-app p-3">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted">Precio en dólares (opcional)</p>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Precio USD">
+                  <TextInput
+                    type="number"
+                    value={form.precio_usd ?? ''}
+                    onChange={(e) => handlePrecioUsd(e.target.value)}
+                    placeholder="0.00"
+                  />
+                </Field>
+                <Field label="Cotización dólar ($)">
+                  <TextInput
+                    type="number"
+                    value={form.tipo_cambio ?? ''}
+                    onChange={(e) => handleTipoCambio(e.target.value)}
+                    placeholder="0.00"
+                  />
+                </Field>
+              </div>
+              {form.precio_usd && form.tipo_cambio && (
+                <p className="mt-1.5 text-[11px] text-primary">
+                  Precio de lista calculado: ${(form.precio_usd * form.tipo_cambio).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                </p>
+              )}
+            </div>
+
+            {/* Precio de lista */}
+            <div className="rounded border border-line bg-app p-3">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted">Precio de lista y descuentos</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <Field label="Precio de lista ($)">
+                    <TextInput
+                      type="number"
+                      value={form.neto}
+                      onChange={(e) => set('neto', Number(e.target.value))}
+                    />
+                    {form.neto === 0 && (
+                      <p className="mt-1 text-[11px] text-warn">Precio de lista $0 — los precios de venta serán $0.</p>
+                    )}
+                  </Field>
+                </div>
+                <Field label="Descuento 1 (%)">
+                  <TextInput type="number" value={form.descuento_pct} onChange={(e) => set('descuento_pct', Number(e.target.value))} />
+                </Field>
+                <Field label="Descuento 2 (%)">
+                  <TextInput type="number" value={form.desc2_pct} onChange={(e) => set('desc2_pct', Number(e.target.value))} />
+                </Field>
+                <Field label="Descuento 3 (%)">
+                  <TextInput type="number" value={form.desc3_pct} onChange={(e) => set('desc3_pct', Number(e.target.value))} />
+                </Field>
+                <Field label="Descuento 4 (%)">
+                  <TextInput type="number" value={form.desc4_pct} onChange={(e) => set('desc4_pct', Number(e.target.value))} />
+                </Field>
+                <Field label="Descuento 5 (%)">
+                  <TextInput type="number" value={form.desc5_pct} onChange={(e) => set('desc5_pct', Number(e.target.value))} />
+                </Field>
+                <div className="col-span-2">
+                  <p className="text-[11px] text-muted">
+                    Costo tras descuentos: <span className="font-semibold text-ink">${calcularCostoPreview(form).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Ganancia y descuentos de venta */}
+            <div className="rounded border border-line bg-app p-3">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted">Ganancia y precios de venta</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <Field label="Ganancia (%)">
+                    <TextInput type="number" value={form.ganancia_pct} onChange={(e) => set('ganancia_pct', Number(e.target.value))} />
+                  </Field>
+                </div>
+                <Field label="Descuento por mayor (%)">
+                  <TextInput type="number" value={form.markup_mayorista_pct} onChange={(e) => set('markup_mayorista_pct', Number(e.target.value))} />
+                </Field>
+                <Field label="Descuento mostrador (%)">
+                  <TextInput type="number" value={form.markup_consumidor_pct} onChange={(e) => set('markup_consumidor_pct', Number(e.target.value))} />
+                </Field>
+              </div>
+            </div>
+
+            {/* Oferta */}
+            <div className="flex items-center gap-3 rounded border border-line bg-app p-3">
               <label className="flex cursor-pointer items-center gap-2 text-[13px]">
                 <input type="checkbox" checked={form.en_oferta} onChange={(e) => set('en_oferta', e.target.checked)} />
                 <span className="font-medium text-ink">En oferta</span>
