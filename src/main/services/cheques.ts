@@ -1,4 +1,5 @@
 import { query, queryOne, run, insert } from '../db'
+import { asegurarCajaAbierta, registrarMovimientoCaja } from './caja'
 
 export interface ChequeInput {
   numero?: string | null
@@ -10,6 +11,7 @@ export interface ChequeInput {
   tipo?: 'personal' | 'empresa'
   origenTipo?: 'venta' | 'pago_cliente'
   origenId?: number | null
+  incluirEnCaja?: boolean
 }
 
 const CHEQUE_COLS = `id, numero, banco, monto, fecha_emision::TEXT AS fecha_emision, fecha_cobro::TEXT AS fecha_cobro, estado, origen_tipo, origen_id, destino_proveedor_id, librador, tipo`
@@ -21,7 +23,7 @@ export async function listarCheques(estado?: string) {
 }
 
 export async function registrarCheque(data: ChequeInput): Promise<number> {
-  return insert(
+  const chequeId = await insert(
     `INSERT INTO cheques_cartera (numero, banco, monto, fecha_emision, fecha_cobro, librador, tipo, origen_tipo, origen_id)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
     [
@@ -36,6 +38,14 @@ export async function registrarCheque(data: ChequeInput): Promise<number> {
       data.origenId ?? null
     ]
   )
+  if (data.incluirEnCaja) {
+    const caja = await asegurarCajaAbierta()
+    const desc = data.librador
+      ? `Cheque de ${data.librador}${data.numero ? ` N°${data.numero}` : ''}`
+      : `Cheque${data.numero ? ` N°${data.numero}` : ''}`
+    await registrarMovimientoCaja(caja.id, 'ingreso', 'cheque', data.monto, 'cheque', chequeId, desc)
+  }
+  return chequeId
 }
 
 export async function marcarCobrado(id: number): Promise<void> {

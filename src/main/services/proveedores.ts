@@ -67,6 +67,10 @@ export async function crearFactura(data: FacturaInput): Promise<number> {
 
 export async function registrarPagoProveedor(data: PagoProvInput): Promise<number> {
   return tx(async () => {
+    // Obtener caja primero — igual que clientes.ts — para no tener el INSERT de caja
+    // dentro del mismo bloque donde ya se modificó el saldo del proveedor.
+    const caja = await asegurarCajaAbierta()
+
     const prov = await queryOne<{ saldo_cta_cte: number }>(
       'SELECT saldo_cta_cte FROM proveedores WHERE id = $1',
       [data.proveedorId]
@@ -85,7 +89,6 @@ export async function registrarPagoProveedor(data: PagoProvInput): Promise<numbe
       `UPDATE proveedores SET saldo_cta_cte = saldo_cta_cte - $1 WHERE id = $2`,
       [data.monto, data.proveedorId]
     )
-    const caja = await asegurarCajaAbierta()
     await registrarMovimientoCaja(
       caja.id, 'egreso', data.medioPago, data.monto,
       'pago_proveedor', pagoId, `Pago prov. #${data.proveedorId}`

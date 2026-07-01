@@ -15,6 +15,7 @@ interface FormCheque {
   tipo: 'personal' | 'empresa'
   fechaEmision: string
   fechaCobro: string
+  incluirEnCaja: boolean
 }
 
 const FORM_VACIO: FormCheque = {
@@ -24,7 +25,8 @@ const FORM_VACIO: FormCheque = {
   librador: '',
   tipo: 'personal',
   fechaEmision: '',
-  fechaCobro: ''
+  fechaCobro: '',
+  incluirEnCaja: false
 }
 
 export default function ChequesCartera(): JSX.Element {
@@ -53,7 +55,8 @@ export default function ChequesCartera(): JSX.Element {
         librador: form.librador.trim() || null,
         tipo: form.tipo,
         fechaEmision: form.fechaEmision || null,
-        fechaCobro: form.fechaCobro
+        fechaCobro: form.fechaCobro,
+        incluirEnCaja: form.incluirEnCaja
       })
       setModalNuevo(false)
       setForm(FORM_VACIO)
@@ -259,6 +262,15 @@ export default function ChequesCartera(): JSX.Element {
             />
           </Field>
         </div>
+        <label className="mt-3 flex cursor-pointer items-center gap-2 text-[13px] text-ink">
+          <input
+            type="checkbox"
+            checked={form.incluirEnCaja}
+            onChange={(e) => setForm({ ...form, incluirEnCaja: e.target.checked })}
+            className="h-4 w-4 rounded border-line accent-primary"
+          />
+          Incluir en caja diaria
+        </label>
       </Modal>
     </Page>
   )
