@@ -219,7 +219,7 @@ export interface Api {
   listPresupuestos: () => Promise<Presupuesto[]>
   itemsPresupuesto: (id: number) => Promise<unknown[]>
   detallePresupuesto: (id: number) => Promise<DetallePresupuesto | null>
-  aprobarPresupuesto: (id: number) => Promise<void>
+  aprobarPresupuesto: (id: number, pagos: unknown[]) => Promise<number>
   anularPresupuesto: (id: number) => Promise<void>
 
   estadoCaja: () => Promise<CajaEstado>

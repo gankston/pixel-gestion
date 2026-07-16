@@ -3,18 +3,61 @@ import { Plus, FileText, Printer, CheckCheck, Ban } from 'lucide-react'
 import Page from '../components/Page'
 import { Button, TextInput, Field, Modal, Badge } from '../components/ui'
 import { money, fmtFecha } from '../lib/format'
-import { imprimirPresupuesto, verPdfPresupuesto } from '../lib/print'
+import { imprimirPresupuesto, verPdfPresupuesto, imprimirVenta, verPdfVenta } from '../lib/print'
 import type { ArticuloConPrecios, Cliente, Presupuesto } from '../../../preload'
 
 type Lista = 'mayorista' | 'consumidor'
+type Medio = 'efectivo' | 'transferencia' | 'debito' | 'credito' | 'cheque'
+
 interface ItemCarrito {
   art: ArticuloConPrecios
   cantidad: number
 }
 
-const precioDe = (a: ArticuloConPrecios, lista: Lista): number => {
-  if (a.en_oferta && a.precio_oferta != null) return a.precio_oferta
-  return lista === 'mayorista' ? a.precios.mayorista : a.precios.consumidor
+interface ChequeForm {
+  numero: string; banco: string; librador: string; tipo: 'personal' | 'empresa'
+  fechaEmision: string; fechaCobro: string
+}
+
+const FORM_CHEQUE_VACIO: ChequeForm = { numero: '', banco: '', librador: '', tipo: 'personal', fechaEmision: '', fechaCobro: '' }
+
+const MEDIOS: { id: Medio; label: string }[] = [
+  { id: 'efectivo', label: 'Efectivo' },
+  { id: 'transferencia', label: 'Transfer.' },
+  { id: 'debito', label: 'Debito' },
+  { id: 'credito', label: 'Credito' },
+  { id: 'cheque', label: 'Cheque' }
+]
+
+const precioDe = (a: ArticuloConPrecios, lista: Lista): number =>
+  lista === 'mayorista' ? a.precios.mayorista : a.precios.consumidor
+
+function ChequeFormPanel({ form, onChange }: { form: ChequeForm; onChange: React.Dispatch<React.SetStateAction<ChequeForm>> }): JSX.Element {
+  return (
+    <div className="grid grid-cols-2 gap-2 rounded border border-line bg-panel p-2">
+      <Field label="N° Cheque">
+        <input type="text" value={form.numero} onChange={(e) => onChange((f) => ({ ...f, numero: e.target.value }))} placeholder="Opcional" className="w-full rounded border border-line bg-app px-2 py-1.5 text-[12px] outline-none focus:border-primary" />
+      </Field>
+      <Field label="Banco">
+        <input type="text" value={form.banco} onChange={(e) => onChange((f) => ({ ...f, banco: e.target.value }))} placeholder="Opcional" className="w-full rounded border border-line bg-app px-2 py-1.5 text-[12px] outline-none focus:border-primary" />
+      </Field>
+      <Field label="A nombre de" className="col-span-2">
+        <input type="text" value={form.librador} onChange={(e) => onChange((f) => ({ ...f, librador: e.target.value }))} placeholder="Nombre o razón social" className="w-full rounded border border-line bg-app px-2 py-1.5 text-[12px] outline-none focus:border-primary" />
+      </Field>
+      <Field label="Fecha emision">
+        <input type="date" value={form.fechaEmision} onChange={(e) => onChange((f) => ({ ...f, fechaEmision: e.target.value }))} className="w-full rounded border border-line bg-app px-2 py-1.5 text-[12px] outline-none focus:border-primary" />
+      </Field>
+      <Field label="Fecha cobro">
+        <input type="date" value={form.fechaCobro} onChange={(e) => onChange((f) => ({ ...f, fechaCobro: e.target.value }))} className="w-full rounded border border-line bg-app px-2 py-1.5 text-[12px] outline-none focus:border-primary" />
+      </Field>
+      <Field label="Tipo" className="col-span-2">
+        <select value={form.tipo} onChange={(e) => onChange((f) => ({ ...f, tipo: e.target.value as 'personal' | 'empresa' }))} className="w-full rounded border border-line bg-app px-2 py-1.5 text-[12px] outline-none focus:border-primary">
+          <option value="personal">Personal</option>
+          <option value="empresa">Empresa</option>
+        </select>
+      </Field>
+    </div>
+  )
 }
 
 const TONO: Record<string, 'primary' | 'ok' | 'muted' | 'danger'> = {
@@ -29,6 +72,8 @@ export default function Presupuestos(): JSX.Element {
   const [modal, setModal] = useState(false)
   const [error, setError] = useState('')
   const [errorGuardar, setErrorGuardar] = useState('')
+  const [mensajeOk, setMensajeOk] = useState('')
+  const [ultimaVentaId, setUltimaVentaId] = useState<number | null>(null)
 
   const [clienteId, setClienteId] = useState<number | null>(null)
   const [clientes, setClientes] = useState<Cliente[]>([])
@@ -36,6 +81,17 @@ export default function Presupuestos(): JSX.Element {
   const [busqueda, setBusqueda] = useState('')
   const [resultados, setResultados] = useState<ArticuloConPrecios[]>([])
   const [carrito, setCarrito] = useState<ItemCarrito[]>([])
+
+  // Payment modal state
+  const [modalPago, setModalPago] = useState(false)
+  const [presupAprobando, setPresupAprobando] = useState<Presupuesto | null>(null)
+  const [medio, setMedio] = useState<Medio>('efectivo')
+  const [chequeForm, setChequeForm] = useState<ChequeForm>(FORM_CHEQUE_VACIO)
+  const [dosPagos, setDosPagos] = useState(false)
+  const [medio2, setMedio2] = useState<Medio>('transferencia')
+  const [monto1Str, setMonto1Str] = useState('')
+  const [chequeForm2, setChequeForm2] = useState<ChequeForm>(FORM_CHEQUE_VACIO)
+  const [errorPago, setErrorPago] = useState('')
 
   function recargar(): void {
     window.api.listPresupuestos().then(setLista)
@@ -93,16 +149,81 @@ export default function Presupuestos(): JSX.Element {
     }
   }
 
-  async function aprobar(id: number): Promise<void> {
-    if (!confirm('Aprobar el presupuesto? Se descuenta el stock y se genera la venta.')) return
-    setError('')
+  function iniciarAprobar(p: Presupuesto): void {
+    setPresupAprobando(p)
+    setMedio('efectivo')
+    setChequeForm(FORM_CHEQUE_VACIO)
+    setDosPagos(false)
+    setMedio2('transferencia')
+    setMonto1Str('')
+    setChequeForm2(FORM_CHEQUE_VACIO)
+    setErrorPago('')
+    setModalPago(true)
+  }
+
+  async function confirmarVenta(): Promise<void> {
+    if (!presupAprobando) return
+    const totalPres = presupAprobando.total
+    const monto1 = dosPagos ? Math.max(0, parseFloat(monto1Str) || 0) : totalPres
+    const monto2 = dosPagos ? Math.max(0, totalPres - monto1) : 0
+
+    if (medio === 'cheque' && !chequeForm.fechaCobro) {
+      setErrorPago('Para pagar con cheque (forma 1) completá la fecha de cobro.')
+      return
+    }
+    if (dosPagos && medio2 === 'cheque' && !chequeForm2.fechaCobro) {
+      setErrorPago('Para pagar con cheque (forma 2) completá la fecha de cobro.')
+      return
+    }
+
+    const pagos = dosPagos
+      ? [{ medio, monto: monto1 }, { medio: medio2, monto: monto2 }].filter((p) => p.monto > 0)
+      : [{ medio, monto: totalPres }]
+
+    let ventaId: number
     try {
-      await window.api.aprobarPresupuesto(id)
-      recargar()
+      ventaId = await window.api.aprobarPresupuesto(presupAprobando.id, pagos)
     } catch (e) {
       const msg = (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': Error: /, '')
-      setError(`No se pudo aprobar: ${msg}`)
+      setErrorPago(`No se pudo aprobar: ${msg}`)
+      return
     }
+
+    if (medio === 'cheque' && monto1 > 0) {
+      try {
+        await window.api.registrarCheque({
+          numero: chequeForm.numero.trim() || null,
+          banco: chequeForm.banco.trim() || null,
+          monto: dosPagos ? monto1 : totalPres,
+          fechaEmision: chequeForm.fechaEmision || null,
+          fechaCobro: chequeForm.fechaCobro,
+          librador: chequeForm.librador.trim() || null,
+          tipo: chequeForm.tipo,
+          origenTipo: 'venta',
+          origenId: ventaId
+        })
+      } catch { /* cheque fallback: venta already registered */ }
+    }
+    if (dosPagos && medio2 === 'cheque' && monto2 > 0) {
+      try {
+        await window.api.registrarCheque({
+          numero: chequeForm2.numero.trim() || null,
+          banco: chequeForm2.banco.trim() || null,
+          monto: monto2,
+          fechaEmision: chequeForm2.fechaEmision || null,
+          fechaCobro: chequeForm2.fechaCobro,
+          librador: chequeForm2.librador.trim() || null,
+          tipo: chequeForm2.tipo,
+          origenTipo: 'venta',
+          origenId: ventaId
+        })
+      } catch { /* cheque fallback */ }
+    }
+
+    setModalPago(false)
+    setUltimaVentaId(ventaId)
+    setMensajeOk(`Presupuesto #${presupAprobando.id} aprobado — Venta #${ventaId} registrada.`)
+    recargar()
   }
   async function anular(id: number): Promise<void> {
     if (!confirm('Anular el presupuesto? Se libera el stock reservado.')) return
@@ -147,7 +268,37 @@ export default function Presupuestos(): JSX.Element {
       {error && (
         <div className="mb-3 flex items-center justify-between rounded border border-danger/30 bg-danger/8 px-4 py-2.5 text-[13px] text-danger">
           <span>{error}</span>
-          <button onClick={() => setError('')} className="ml-3 text-danger/60 hover:text-danger">✕</button>
+          <button onClick={() => setError('')} className="ml-3 text-danger/60 hover:text-danger">x</button>
+        </div>
+      )}
+      {mensajeOk && (
+        <div className="mb-3 flex items-center justify-between rounded border border-ok/30 bg-ok/8 px-4 py-2.5 text-[13px] text-ok">
+          <span>{mensajeOk}</span>
+          <div className="flex items-center gap-2">
+            {ultimaVentaId && (
+              <>
+                <button
+                  className="flex items-center gap-1 rounded border border-ok/30 px-2 py-0.5 text-[11px] font-semibold hover:bg-ok/10"
+                  onClick={async () => {
+                    const det = await window.api.detalleVenta(ultimaVentaId)
+                    if (det) await verPdfVenta(det)
+                  }}
+                >
+                  <FileText size={11} /> Ver PDF
+                </button>
+                <button
+                  className="flex items-center gap-1 rounded border border-ok/30 px-2 py-0.5 text-[11px] font-semibold hover:bg-ok/10"
+                  onClick={async () => {
+                    const det = await window.api.detalleVenta(ultimaVentaId)
+                    if (det) await imprimirVenta(det)
+                  }}
+                >
+                  <Printer size={11} /> Imprimir
+                </button>
+              </>
+            )}
+            <button onClick={() => { setMensajeOk(''); setUltimaVentaId(null) }} className="ml-1 text-ok/60 hover:text-ok">x</button>
+          </div>
         </div>
       )}
 
@@ -192,7 +343,7 @@ export default function Presupuestos(): JSX.Element {
                     {p.estado === 'vigente' && (
                       <>
                         <button
-                          onClick={() => aprobar(p.id)}
+                          onClick={() => iniciarAprobar(p)}
                           className="flex h-7 w-7 items-center justify-center rounded border border-transparent text-muted transition-colors hover:border-ok/40 hover:text-ok"
                           title="Aprobar"
                         >
@@ -222,6 +373,129 @@ export default function Presupuestos(): JSX.Element {
         </table>
       </div>
 
+      {/* Payment modal for approving a presupuesto */}
+      {presupAprobando && (
+        <Modal
+          open={modalPago}
+          title={`Confirmar venta — Presupuesto #${presupAprobando.id}`}
+          onClose={() => setModalPago(false)}
+          footer={
+            <>
+              <span className="mr-auto font-mono text-lg font-bold text-ink">{money(presupAprobando.total)}</span>
+              <Button variant="secondary" onClick={() => setModalPago(false)}>Cancelar</Button>
+              <Button
+                onClick={confirmarVenta}
+                disabled={
+                  (medio === 'cheque' && !chequeForm.fechaCobro) ||
+                  (dosPagos && medio2 === 'cheque' && !chequeForm2.fechaCobro)
+                }
+              >
+                Confirmar venta
+              </Button>
+            </>
+          }
+        >
+          {errorPago && (
+            <div className="mb-3 flex items-center justify-between rounded border border-danger/30 bg-danger/8 px-3 py-2 text-[12px] text-danger">
+              <span>{errorPago}</span>
+              <button onClick={() => setErrorPago('')} className="ml-2 text-danger/60 hover:text-danger">x</button>
+            </div>
+          )}
+
+          {/* Toggle 2 formas de pago */}
+          <label className="mb-3 flex cursor-pointer items-center gap-2 text-[13px] text-muted">
+            <input
+              type="checkbox"
+              checked={dosPagos}
+              onChange={(e) => {
+                setDosPagos(e.target.checked)
+                setMonto1Str('')
+                setChequeForm(FORM_CHEQUE_VACIO)
+                setChequeForm2(FORM_CHEQUE_VACIO)
+              }}
+              className="accent-primary"
+            />
+            2 formas de pago
+          </label>
+
+          {!dosPagos ? (
+            <>
+              <div className="mb-3 grid grid-cols-5 gap-1">
+                {MEDIOS.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => { setMedio(m.id); setChequeForm(FORM_CHEQUE_VACIO) }}
+                    className={
+                      'rounded py-1.5 text-[12px] font-semibold transition-colors ' +
+                      (medio === m.id ? 'bg-primary text-white' : 'border border-line text-muted hover:border-ink/30 hover:text-ink')
+                    }
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+              {medio === 'cheque' && <ChequeFormPanel form={chequeForm} onChange={setChequeForm} />}
+            </>
+          ) : (
+            <>
+              {/* Forma 1 */}
+              <div className="mb-3 rounded border border-line bg-app px-3 py-2.5">
+                <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted">Forma 1</div>
+                <div className="mb-2 grid grid-cols-5 gap-1">
+                  {MEDIOS.map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => { setMedio(m.id); setChequeForm(FORM_CHEQUE_VACIO) }}
+                      className={
+                        'rounded py-1.5 text-[12px] font-semibold transition-colors ' +
+                        (medio === m.id ? 'bg-primary text-white' : 'border border-line text-muted hover:border-ink/30 hover:text-ink')
+                      }
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={monto1Str}
+                  onChange={(e) => setMonto1Str(e.target.value)}
+                  placeholder={`Monto (total: ${money(presupAprobando.total)})`}
+                  className="w-full rounded border border-line bg-panel px-2.5 py-1.5 text-[13px] font-mono outline-none focus:border-primary"
+                />
+                {medio === 'cheque' && <div className="mt-2"><ChequeFormPanel form={chequeForm} onChange={setChequeForm} /></div>}
+              </div>
+
+              {/* Forma 2 */}
+              <div className="rounded border border-line bg-app px-3 py-2.5">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">Forma 2</span>
+                  <span className="font-mono text-[13px] font-semibold text-primary">
+                    {money(Math.max(0, presupAprobando.total - (parseFloat(monto1Str) || 0)))}
+                  </span>
+                </div>
+                <div className="grid grid-cols-5 gap-1">
+                  {MEDIOS.map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => { setMedio2(m.id); setChequeForm2(FORM_CHEQUE_VACIO) }}
+                      className={
+                        'rounded py-1.5 text-[12px] font-semibold transition-colors ' +
+                        (medio2 === m.id ? 'bg-primary text-white' : 'border border-line text-muted hover:border-ink/30 hover:text-ink')
+                      }
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+                {medio2 === 'cheque' && <div className="mt-2"><ChequeFormPanel form={chequeForm2} onChange={setChequeForm2} /></div>}
+              </div>
+            </>
+          )}
+        </Modal>
+      )}
+
       <Modal
         open={modal}
         title="Nuevo presupuesto"
@@ -230,7 +504,7 @@ export default function Presupuestos(): JSX.Element {
           <>
             <span className="mr-auto font-mono text-lg font-bold text-ink">{money(total)}</span>
             <Button variant="secondary" onClick={() => setModal(false)}>Cancelar</Button>
-            <Button disabled={carrito.length === 0} onClick={guardar}>Crear (reserva stock)</Button>
+            <Button disabled={carrito.length === 0} onClick={guardar}>Crear presupuesto</Button>
           </>
         }
       >

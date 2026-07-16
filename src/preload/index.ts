@@ -32,7 +32,7 @@ const api = {
   listPresupuestos: () => ipcRenderer.invoke('presupuestos:list'),
   itemsPresupuesto: (id: number) => ipcRenderer.invoke('presupuestos:items', id),
   detallePresupuesto: (id: number) => ipcRenderer.invoke('presupuestos:detalle', id),
-  aprobarPresupuesto: (id: number) => ipcRenderer.invoke('presupuestos:aprobar', id),
+  aprobarPresupuesto: (id: number, pagos: unknown[]) => ipcRenderer.invoke('presupuestos:aprobar', id, pagos),
   anularPresupuesto: (id: number) => ipcRenderer.invoke('presupuestos:anular', id),
 
   // Caja

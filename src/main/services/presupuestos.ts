@@ -1,6 +1,5 @@
 import { run, insert, tx, query, queryOne } from '../db'
-import { registrarMovimiento } from './stock'
-import { crearVenta } from './ventas'
+import { crearVenta, type PagoInput } from './ventas'
 
 export interface PresupuestoItemInput {
   articuloId: number
@@ -27,8 +26,6 @@ interface ItemRow {
   precio_unit: number
 }
 
-interface StockRow { nombre: string; stock_disponible: number }
-
 export async function crearPresupuesto(input: PresupuestoInput): Promise<number> {
   return tx(async () => {
     const venc = input.vencimiento
@@ -40,25 +37,12 @@ export async function crearPresupuesto(input: PresupuestoInput): Promise<number>
       [input.clienteId ?? null, input.lista, venc]
     )
 
-    // Validar stock antes de reservar
-    for (const it of input.items) {
-      const art = await queryOne<StockRow>(
-        `SELECT nombre, (stock_fisico - stock_reservado) AS stock_disponible FROM articulos WHERE id = $1`,
-        [it.articuloId]
-      )
-      if (!art || art.stock_disponible < it.cantidad) {
-        const nombre = art?.nombre ?? `#${it.articuloId}`
-        throw new Error(`Stock insuficiente: "${nombre}" (disponible: ${art?.stock_disponible ?? 0}, pedido: ${it.cantidad})`)
-      }
-    }
-
     let total = 0
     for (const it of input.items) {
       await insert(
         'INSERT INTO presupuesto_items (presupuesto_id, articulo_id, cantidad, precio_unit) VALUES ($1,$2,$3,$4)',
         [presupId, it.articuloId, it.cantidad, it.precioUnit]
       )
-      await registrarMovimiento(it.articuloId, 'reserva', it.cantidad, 'presupuesto', presupId)
       total += it.cantidad * it.precioUnit
     }
     await run('UPDATE presupuestos SET total = $1 WHERE id = $2', [total, presupId])
@@ -110,8 +94,8 @@ export async function detallePresupuesto(id: number) {
   return { ...pres, items }
 }
 
-export async function aprobarPresupuesto(presupuestoId: number): Promise<void> {
-  await tx(async () => {
+export async function aprobarPresupuesto(presupuestoId: number, pagos: PagoInput[]): Promise<number> {
+  return tx(async () => {
     const p = await queryOne<PresupuestoRow>('SELECT * FROM presupuestos WHERE id = $1', [presupuestoId])
     if (!p) throw new Error('Presupuesto inexistente')
     if (p.estado !== 'vigente') throw new Error('Solo se aprueban presupuestos vigentes')
@@ -121,11 +105,7 @@ export async function aprobarPresupuesto(presupuestoId: number): Promise<void> {
       [presupuestoId]
     )
 
-    for (const it of items) {
-      await registrarMovimiento(it.articulo_id, 'liberacion', it.cantidad, 'presupuesto', presupuestoId)
-    }
-
-    await crearVenta({
+    const { ventaId } = await crearVenta({
       clienteId: p.cliente_id,
       lista: p.lista,
       items: items.map((it) => ({
@@ -133,11 +113,12 @@ export async function aprobarPresupuesto(presupuestoId: number): Promise<void> {
         cantidad: it.cantidad,
         precioUnit: it.precio_unit
       })),
-      pagos: [],
+      pagos,
       presupuestoId
     })
 
     await run("UPDATE presupuestos SET estado = 'aprobado' WHERE id = $1", [presupuestoId])
+    return ventaId
   })
 }
 
@@ -145,13 +126,6 @@ export async function anularPresupuesto(presupuestoId: number): Promise<void> {
   await tx(async () => {
     const p = await queryOne<PresupuestoRow>('SELECT * FROM presupuestos WHERE id = $1', [presupuestoId])
     if (!p || p.estado !== 'vigente') return
-    const items = await query<ItemRow>(
-      'SELECT * FROM presupuesto_items WHERE presupuesto_id = $1',
-      [presupuestoId]
-    )
-    for (const it of items) {
-      await registrarMovimiento(it.articulo_id, 'liberacion', it.cantidad, 'presupuesto', presupuestoId)
-    }
     await run("UPDATE presupuestos SET estado = 'anulado' WHERE id = $1", [presupuestoId])
   })
 }

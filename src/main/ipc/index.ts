@@ -77,7 +77,9 @@ export function registerIpc(): void {
   ipcMain.handle('presupuestos:list', () => presupuestos.listarPresupuestos())
   ipcMain.handle('presupuestos:items', (_e, id: number) => presupuestos.itemsPresupuesto(id))
   ipcMain.handle('presupuestos:detalle', (_e, id: number) => presupuestos.detallePresupuesto(id))
-  ipcMain.handle('presupuestos:aprobar', (_e, id: number) => presupuestos.aprobarPresupuesto(id))
+  ipcMain.handle('presupuestos:aprobar', (_e, id: number, pagos: ventas.PagoInput[]) =>
+    presupuestos.aprobarPresupuesto(id, pagos)
+  )
   ipcMain.handle('presupuestos:anular', (_e, id: number) => presupuestos.anularPresupuesto(id))
 
   // Caja

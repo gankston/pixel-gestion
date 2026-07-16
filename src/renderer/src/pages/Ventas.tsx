@@ -33,8 +33,35 @@ const MEDIOS: { id: Medio; label: string }[] = [
 ]
 
 function precioDe(art: ArticuloConPrecios, lista: Lista): number {
-  if (art.en_oferta && art.precio_oferta != null) return art.precio_oferta
   return lista === 'mayorista' ? art.precios.mayorista : art.precios.consumidor
+}
+
+function ChequeFormPanel({ form, onChange }: { form: ChequeForm; onChange: React.Dispatch<React.SetStateAction<ChequeForm>> }): JSX.Element {
+  return (
+    <div className="grid grid-cols-2 gap-2 rounded border border-line bg-panel p-2">
+      <Field label="N° Cheque">
+        <input type="text" value={form.numero} onChange={(e) => onChange((f) => ({ ...f, numero: e.target.value }))} placeholder="Opcional" className="w-full rounded border border-line bg-app px-2 py-1.5 text-[12px] outline-none focus:border-primary" />
+      </Field>
+      <Field label="Banco">
+        <input type="text" value={form.banco} onChange={(e) => onChange((f) => ({ ...f, banco: e.target.value }))} placeholder="Opcional" className="w-full rounded border border-line bg-app px-2 py-1.5 text-[12px] outline-none focus:border-primary" />
+      </Field>
+      <Field label="A nombre de" className="col-span-2">
+        <input type="text" value={form.librador} onChange={(e) => onChange((f) => ({ ...f, librador: e.target.value }))} placeholder="Nombre o razón social" className="w-full rounded border border-line bg-app px-2 py-1.5 text-[12px] outline-none focus:border-primary" />
+      </Field>
+      <Field label="Fecha emisión">
+        <input type="date" value={form.fechaEmision} onChange={(e) => onChange((f) => ({ ...f, fechaEmision: e.target.value }))} className="w-full rounded border border-line bg-app px-2 py-1.5 text-[12px] outline-none focus:border-primary" />
+      </Field>
+      <Field label="Fecha cobro">
+        <input type="date" value={form.fechaCobro} onChange={(e) => onChange((f) => ({ ...f, fechaCobro: e.target.value }))} className="w-full rounded border border-line bg-app px-2 py-1.5 text-[12px] outline-none focus:border-primary" />
+      </Field>
+      <Field label="Tipo" className="col-span-2">
+        <select value={form.tipo} onChange={(e) => onChange((f) => ({ ...f, tipo: e.target.value as 'personal' | 'empresa' }))} className="w-full rounded border border-line bg-app px-2 py-1.5 text-[12px] outline-none focus:border-primary">
+          <option value="personal">Personal</option>
+          <option value="empresa">Empresa</option>
+        </select>
+      </Field>
+    </div>
+  )
 }
 
 export default function Ventas(): JSX.Element {
@@ -46,6 +73,10 @@ export default function Ventas(): JSX.Element {
   const [resultados, setResultados] = useState<ArticuloConPrecios[]>([])
   const [medio, setMedio] = useState<Medio>('efectivo')
   const [chequeForm, setChequeForm] = useState<ChequeForm>(FORM_CHEQUE_VACIO)
+  const [dosPagos, setDosPagos] = useState(false)
+  const [medio2, setMedio2] = useState<Medio>('transferencia')
+  const [monto1Str, setMonto1Str] = useState('')
+  const [chequeForm2, setChequeForm2] = useState<ChequeForm>(FORM_CHEQUE_VACIO)
   const [mensaje, setMensaje] = useState('')
   const [mensajeError, setMensajeError] = useState(false)
   const [ultimaVentaId, setUltimaVentaId] = useState<number | null>(null)
@@ -108,19 +139,38 @@ export default function Ventas(): JSX.Element {
     )
   }
 
+  const monto1 = dosPagos ? Math.max(0, parseFloat(monto1Str) || 0) : total
+  const monto2 = dosPagos ? Math.max(0, total - monto1) : 0
+
   async function cobrar(fiar: boolean): Promise<void> {
     if (carrito.length === 0) return
     if (fiar && !clienteId) return
-    if (medio === 'cheque' && !chequeForm.fechaCobro) {
-      setMensaje('Para pagar con cheque tenés que completar la fecha de cobro.')
-      return
+
+    if (!fiar) {
+      if (medio === 'cheque' && !chequeForm.fechaCobro) {
+        setMensaje('Para pagar con cheque (forma 1) completá la fecha de cobro.')
+        setMensajeError(true)
+        return
+      }
+      if (dosPagos && medio2 === 'cheque' && !chequeForm2.fechaCobro) {
+        setMensaje('Para pagar con cheque (forma 2) completá la fecha de cobro.')
+        setMensajeError(true)
+        return
+      }
     }
+
     const items = carrito.map((it) => ({
       articuloId: it.art.id,
       cantidad: it.cantidad,
       precioUnit: precioDe(it.art, lista)
     }))
-    const pagos = fiar ? [] : [{ medio, monto: total }]
+
+    const pagos = fiar
+      ? []
+      : dosPagos
+        ? [{ medio, monto: monto1 }, { medio: medio2, monto: monto2 }].filter((p) => p.monto > 0)
+        : [{ medio, monto: total }]
+
     let r: { ventaId: number; total: number }
     try {
       r = await window.api.crearVenta({ clienteId, lista, items, pagos })
@@ -131,33 +181,60 @@ export default function Ventas(): JSX.Element {
       return
     }
 
-    if (!fiar && medio === 'cheque') {
-      try {
-        await window.api.registrarCheque({
-          numero: chequeForm.numero.trim() || null,
-          banco: chequeForm.banco.trim() || null,
-          monto: total,
-          fechaEmision: chequeForm.fechaEmision || null,
-          fechaCobro: chequeForm.fechaCobro,
-          librador: chequeForm.librador.trim() || null,
-          tipo: chequeForm.tipo,
-          origenTipo: 'venta',
-          origenId: r.ventaId
-        })
-      } catch {
-        setCarrito([])
-        setUltimaVentaId(r.ventaId)
+    if (!fiar) {
+      if (medio === 'cheque' && monto1 > 0) {
+        try {
+          await window.api.registrarCheque({
+            numero: chequeForm.numero.trim() || null,
+            banco: chequeForm.banco.trim() || null,
+            monto: dosPagos ? monto1 : total,
+            fechaEmision: chequeForm.fechaEmision || null,
+            fechaCobro: chequeForm.fechaCobro,
+            librador: chequeForm.librador.trim() || null,
+            tipo: chequeForm.tipo,
+            origenTipo: 'venta',
+            origenId: r.ventaId
+          })
+        } catch {
+          setCarrito([])
+          setUltimaVentaId(r.ventaId)
+          setChequeForm(FORM_CHEQUE_VACIO)
+          setMensaje(`Venta #${r.ventaId} registrada, pero el cheque (forma 1) no se pudo guardar. Registralo manualmente.`)
+          setMensajeError(true)
+          return
+        }
         setChequeForm(FORM_CHEQUE_VACIO)
-        setMensaje(`Venta #${r.ventaId} registrada, pero el cheque no se pudo guardar. Registralo manualmente en la sección Cheques.`)
-        setMensajeError(true)
-        return
       }
-      setChequeForm(FORM_CHEQUE_VACIO)
+      if (dosPagos && medio2 === 'cheque' && monto2 > 0) {
+        try {
+          await window.api.registrarCheque({
+            numero: chequeForm2.numero.trim() || null,
+            banco: chequeForm2.banco.trim() || null,
+            monto: monto2,
+            fechaEmision: chequeForm2.fechaEmision || null,
+            fechaCobro: chequeForm2.fechaCobro,
+            librador: chequeForm2.librador.trim() || null,
+            tipo: chequeForm2.tipo,
+            origenTipo: 'venta',
+            origenId: r.ventaId
+          })
+        } catch {
+          setCarrito([])
+          setUltimaVentaId(r.ventaId)
+          setChequeForm2(FORM_CHEQUE_VACIO)
+          setMensaje(`Venta #${r.ventaId} registrada, pero el cheque (forma 2) no se pudo guardar. Registralo manualmente.`)
+          setMensajeError(true)
+          return
+        }
+        setChequeForm2(FORM_CHEQUE_VACIO)
+      }
     }
 
     setCarrito([])
     setUltimaVentaId(r.ventaId)
     setMensajeError(false)
+    setDosPagos(false)
+    setMonto1Str('')
     if (fiar) {
       setMedio('efectivo')
       setChequeForm(FORM_CHEQUE_VACIO)
@@ -165,7 +242,9 @@ export default function Ventas(): JSX.Element {
     setMensaje(
       fiar
         ? `Venta #${r.ventaId} a cuenta corriente por ${money(r.total)}.`
-        : `Venta #${r.ventaId} cobrada por ${money(r.total)} — ${medio}.`
+        : dosPagos
+          ? `Venta #${r.ventaId} cobrada por ${money(r.total)} — ${medio} + ${medio2}.`
+          : `Venta #${r.ventaId} cobrada por ${money(r.total)} — ${medio}.`
     )
     scanRef.current?.focus()
   }
@@ -333,87 +412,112 @@ export default function Ventas(): JSX.Element {
               <span className="font-mono text-3xl font-bold text-ink">{money(total)}</span>
             </div>
 
-            {/* Medios de pago */}
-            <div className="mb-2 grid grid-cols-5 gap-1">
-              {MEDIOS.map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => { setMedio(m.id); setChequeForm(FORM_CHEQUE_VACIO) }}
-                  className={
-                    'rounded py-1.5 text-[11px] font-semibold transition-colors ' +
-                    (medio === m.id
-                      ? 'bg-primary text-white'
-                      : 'border border-line text-muted hover:border-ink/30 hover:text-ink')
-                  }
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
+            {/* Toggle 2 formas de pago */}
+            <label className="mb-2 flex cursor-pointer items-center gap-2 text-[12px] text-muted">
+              <input
+                type="checkbox"
+                checked={dosPagos}
+                onChange={(e) => {
+                  setDosPagos(e.target.checked)
+                  setMonto1Str('')
+                  setChequeForm(FORM_CHEQUE_VACIO)
+                  setChequeForm2(FORM_CHEQUE_VACIO)
+                }}
+                className="accent-primary"
+              />
+              2 formas de pago
+            </label>
 
-            {/* Datos del cheque — solo cuando está seleccionado */}
-            {medio === 'cheque' && (
-              <div className="mb-3 grid grid-cols-2 gap-2 rounded border border-line bg-app p-2.5">
-                <Field label="N° Cheque">
+            {!dosPagos ? (
+              <>
+                {/* Medios de pago — simple */}
+                <div className="mb-2 grid grid-cols-5 gap-1">
+                  {MEDIOS.map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => { setMedio(m.id); setChequeForm(FORM_CHEQUE_VACIO) }}
+                      className={
+                        'rounded py-1.5 text-[11px] font-semibold transition-colors ' +
+                        (medio === m.id
+                          ? 'bg-primary text-white'
+                          : 'border border-line text-muted hover:border-ink/30 hover:text-ink')
+                      }
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+                {medio === 'cheque' && <ChequeFormPanel form={chequeForm} onChange={setChequeForm} />}
+              </>
+            ) : (
+              <>
+                {/* Forma 1 */}
+                <div className="mb-2 rounded border border-line bg-app px-2.5 py-2">
+                  <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Forma 1</div>
+                  <div className="mb-1.5 grid grid-cols-5 gap-1">
+                    {MEDIOS.map((m) => (
+                      <button
+                        key={m.id}
+                        onClick={() => { setMedio(m.id); setChequeForm(FORM_CHEQUE_VACIO) }}
+                        className={
+                          'rounded py-1.5 text-[11px] font-semibold transition-colors ' +
+                          (medio === m.id
+                            ? 'bg-primary text-white'
+                            : 'border border-line text-muted hover:border-ink/30 hover:text-ink')
+                        }
+                      >
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
                   <input
-                    type="text"
-                    value={chequeForm.numero}
-                    onChange={(e) => setChequeForm((f) => ({ ...f, numero: e.target.value }))}
-                    placeholder="Opcional"
-                    className="w-full rounded border border-line bg-panel px-2.5 py-1.5 text-[12px] text-ink outline-none focus:border-primary"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={monto1Str}
+                    onChange={(e) => setMonto1Str(e.target.value)}
+                    placeholder={`Monto (max ${money(total)})`}
+                    className="w-full rounded border border-line bg-panel px-2.5 py-1.5 text-[13px] font-mono text-ink outline-none focus:border-primary"
                   />
-                </Field>
-                <Field label="Banco">
-                  <input
-                    type="text"
-                    value={chequeForm.banco}
-                    onChange={(e) => setChequeForm((f) => ({ ...f, banco: e.target.value }))}
-                    placeholder="Opcional"
-                    className="w-full rounded border border-line bg-panel px-2.5 py-1.5 text-[12px] text-ink outline-none focus:border-primary"
-                  />
-                </Field>
-                <Field label="A nombre de" className="col-span-2">
-                  <input
-                    type="text"
-                    value={chequeForm.librador}
-                    onChange={(e) => setChequeForm((f) => ({ ...f, librador: e.target.value }))}
-                    placeholder="Nombre o razón social"
-                    className="w-full rounded border border-line bg-panel px-2.5 py-1.5 text-[12px] text-ink outline-none focus:border-primary"
-                  />
-                </Field>
-                <Field label="Fecha de emisión">
-                  <input
-                    type="date"
-                    value={chequeForm.fechaEmision}
-                    onChange={(e) => setChequeForm((f) => ({ ...f, fechaEmision: e.target.value }))}
-                    className="w-full rounded border border-line bg-panel px-2.5 py-1.5 text-[12px] text-ink outline-none focus:border-primary"
-                  />
-                </Field>
-                <Field label="Fecha de cobro">
-                  <input
-                    type="date"
-                    value={chequeForm.fechaCobro}
-                    onChange={(e) => setChequeForm((f) => ({ ...f, fechaCobro: e.target.value }))}
-                    className="w-full rounded border border-line bg-panel px-2.5 py-1.5 text-[12px] text-ink outline-none focus:border-primary"
-                  />
-                </Field>
-                <Field label="Tipo" className="col-span-2">
-                  <select
-                    value={chequeForm.tipo}
-                    onChange={(e) => setChequeForm((f) => ({ ...f, tipo: e.target.value as 'personal' | 'empresa' }))}
-                    className="w-full rounded border border-line bg-panel px-2.5 py-1.5 text-[12px] text-ink outline-none focus:border-primary"
-                  >
-                    <option value="personal">Personal</option>
-                    <option value="empresa">Empresa</option>
-                  </select>
-                </Field>
-              </div>
+                  {medio === 'cheque' && <div className="mt-2"><ChequeFormPanel form={chequeForm} onChange={setChequeForm} /></div>}
+                </div>
+
+                {/* Forma 2 */}
+                <div className="mb-2 rounded border border-line bg-app px-2.5 py-2">
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">Forma 2</span>
+                    <span className="font-mono text-[12px] font-semibold text-primary">{money(monto2)}</span>
+                  </div>
+                  <div className="grid grid-cols-5 gap-1">
+                    {MEDIOS.map((m) => (
+                      <button
+                        key={m.id}
+                        onClick={() => { setMedio2(m.id); setChequeForm2(FORM_CHEQUE_VACIO) }}
+                        className={
+                          'rounded py-1.5 text-[11px] font-semibold transition-colors ' +
+                          (medio2 === m.id
+                            ? 'bg-primary text-white'
+                            : 'border border-line text-muted hover:border-ink/30 hover:text-ink')
+                        }
+                      >
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
+                  {medio2 === 'cheque' && <div className="mt-2"><ChequeFormPanel form={chequeForm2} onChange={setChequeForm2} /></div>}
+                </div>
+              </>
             )}
 
             <div className="flex gap-2">
               <Button
                 className="flex-1"
-                disabled={carrito.length === 0 || (medio === 'cheque' && !chequeForm.fechaCobro)}
+                disabled={
+                  carrito.length === 0 ||
+                  (!dosPagos && medio === 'cheque' && !chequeForm.fechaCobro) ||
+                  (dosPagos && medio === 'cheque' && !chequeForm.fechaCobro) ||
+                  (dosPagos && medio2 === 'cheque' && !chequeForm2.fechaCobro)
+                }
                 onClick={() => cobrar(false)}
               >
                 Cobrar {total > 0 && money(total)}
