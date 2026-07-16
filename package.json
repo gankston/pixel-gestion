@@ -1,6 +1,6 @@
 {
   "name": "pixel-gestion",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "PIXEL GESTION - Sistema de ventas y stock para negocios",
   "main": "./out/main/index.js",
   "author": "Gaston Orellana <pgastonor@gmail.com>",
