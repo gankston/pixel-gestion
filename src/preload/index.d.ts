@@ -13,6 +13,13 @@ export interface DbStatus {
 }
 
 export interface PreciosCalculados {
+  costo: number
+  mayorSinIva: number
+  mostradorSinIva: number
+  mayorFinal: number
+  mostradorFinal: number
+  mayorOferta: number | null
+  mostradorOferta: number | null
   netoFinal: number
   base: number
   mayorista: number
@@ -30,11 +37,12 @@ export interface ArticuloConPrecios {
   desc3_pct: number
   desc4_pct: number
   desc5_pct: number
-  ganancia_pct: number
   markup_mayorista_pct: number
   markup_consumidor_pct: number
-  en_oferta: number
-  precio_oferta: number | null
+  en_oferta_mayor: number
+  en_oferta_mostrador: number
+  desc_oferta_mayor_pct: number
+  desc_oferta_mostrador_pct: number
   stock_fisico: number
   stock_reservado: number
   stock_disponible: number
