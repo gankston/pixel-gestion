@@ -53,6 +53,9 @@ export async function crearVenta(input: VentaInput): Promise<{ ventaId: number; 
     await run('UPDATE ventas SET total = $1 WHERE id = $2', [total, ventaId])
 
     const pagosFiltrados = input.pagos.filter((p) => p.monto > 0)
+    const baseDesc = input.presupuestoId
+      ? `Venta #${ventaId} (Presup. #${input.presupuestoId})`
+      : `Venta #${ventaId}`
     let pagoIdx = 0
     let pagado = 0
     for (const p of input.pagos) {
@@ -60,8 +63,8 @@ export async function crearVenta(input: VentaInput): Promise<{ ventaId: number; 
       pagoIdx++
       const desc =
         pagosFiltrados.length > 1
-          ? `Venta #${ventaId} - parte ${pagoIdx}/${pagosFiltrados.length}`
-          : `Venta #${ventaId}`
+          ? `${baseDesc} - parte ${pagoIdx}/${pagosFiltrados.length}`
+          : baseDesc
       await registrarMovimientoCaja(caja.id, 'ingreso', p.medio, p.monto, 'venta', ventaId, desc)
       pagado += p.monto
     }
